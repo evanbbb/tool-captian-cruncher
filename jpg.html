@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>JPEG Pipeline Builder</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <main class="app-grid">
+        <section class="control-column">
+          <header class="hero panel">
+            <p class="eyebrow">Local Command Compiler</p>
+            <h1>JPEG Pipeline Builder</h1>
+            <p class="hero-copy">
+              Paste one JPG or JPEG file path, tune the optimizer chain, and
+              copy the exact Terminal command. The browser never opens or uploads
+              the file.
+            </p>
+            <div class="hero-meta">
+              <span class="meta-chip">jpegoptim</span>
+              <span class="meta-chip">jpegtran</span>
+            </div>
+            <p class="install-hint">
+              Install separately: <code>brew install jpegoptim jpeg-turbo</code>
+            </p>
+            <nav class="format-nav" aria-label="Format pages">
+              <a class="format-link" href="./index.html">PNG Builder</a>
+              <a class="format-link active" href="./jpg.html">JPEG Builder</a>
+            </nav>
+          </header>
+
+          <section class="panel">
+            <div class="section-head">
+              <div>
+                <p class="section-kicker">Preset</p>
+                <h2>Base Configuration</h2>
+              </div>
+              <span class="state-pill" id="presetStatus">Preset: Balanced</span>
+            </div>
+
+            <div class="field-grid compact-grid">
+              <label class="field">
+                <span class="field-label">Preset</span>
+                <select id="presetSelect">
+                  <option value="balanced">Balanced</option>
+                  <option value="small">Small</option>
+                  <option value="tiny">Tiny</option>
+                  <option value="lossless">Lossless only</option>
+                </select>
+              </label>
+              <div class="field action-field">
+                <span class="field-label">Reset</span>
+                <button class="secondary-button" id="resetPresetButton" type="button">
+                  Reload preset
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="section-head">
+              <div>
+                <p class="section-kicker">Paths</p>
+                <h2>Single File</h2>
+              </div>
+            </div>
+
+            <div class="field-grid">
+              <label class="field field-span">
+                <span class="field-label">Input file path</span>
+                <input
+                  id="inputFile"
+                  type="text"
+                  spellcheck="false"
+                  placeholder="/Users/you/Desktop/photo.jpg"
+                />
+                <span class="field-note">
+                  Text only. The app does not read the file, but this page expects a JPEG path.
+                </span>
+              </label>
+
+              <label class="field">
+                <span class="field-label">Output suffix</span>
+                <input id="outputSuffix" type="text" spellcheck="false" />
+                <span class="field-note">
+                  Defaults to the runtime shell expression <code>$(date +%d%H%M%S)</code>.
+                </span>
+              </label>
+
+              <div class="field output-preview">
+                <span class="field-label">Derived output path</span>
+                <code id="derivedOutput" class="derived-path">Waiting for input</code>
+                <span class="field-note">
+                  Uses the same file extension as the source image.
+                </span>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="section-head">
+              <div>
+                <p class="section-kicker">Pipeline</p>
+                <h2>Fixed Order</h2>
+              </div>
+            </div>
+            <p class="pipeline-order">jpegoptim → jpegtran</p>
+            <p class="section-note">
+              The order is fixed so the lossy or lossless recompression happens
+              first, followed by an optional lossless rewrite pass.
+            </p>
+          </section>
+
+          <section class="panel tool-panel">
+            <div class="section-head">
+              <div>
+                <p class="section-kicker">jpegoptim</p>
+                <h2>Main Optimizer</h2>
+              </div>
+              <label class="toggle">
+                <input id="jpegoptimEnabled" type="checkbox" />
+                <span>Enabled</span>
+              </label>
+            </div>
+            <p class="section-note">
+              Handles both lossless Huffman optimization and optional lossy
+              recompression with a maximum quality ceiling.
+            </p>
+            <div class="field-grid">
+              <label class="field">
+                <span class="field-label">Max quality 0-100</span>
+                <input
+                  id="jpegoptimMaxQuality"
+                  type="number"
+                  min="0"
+                  max="100"
+                  placeholder="82"
+                />
+                <span class="field-note">
+                  Blank keeps jpegoptim in lossless mode.
+                </span>
+              </label>
+              <label class="field">
+                <span class="field-label">Threshold 0-100</span>
+                <input
+                  id="jpegoptimThreshold"
+                  type="number"
+                  min="0"
+                  max="100"
+                  placeholder="2"
+                />
+                <span class="field-note">
+                  Keep file unchanged if gain is below this percent.
+                </span>
+              </label>
+              <label class="field">
+                <span class="field-label">Progressive mode</span>
+                <select id="jpegoptimProgressiveMode">
+                  <option value="preserve">Preserve source</option>
+                  <option value="auto">Auto smaller</option>
+                  <option value="all-progressive">All progressive</option>
+                  <option value="all-normal">All baseline</option>
+                </select>
+                <span class="field-note">
+                  Controls progressive vs baseline output.
+                </span>
+              </label>
+              <label class="field">
+                <span class="field-label">Metadata mode</span>
+                <select id="jpegoptimMetadataMode">
+                  <option value="default">Default common markers</option>
+                  <option value="strip-all">Strip all markers</option>
+                  <option value="keep-all">Keep all markers</option>
+                </select>
+                <span class="field-note">
+                  Maps to jpegoptim marker handling flags.
+                </span>
+              </label>
+              <label class="field inline-toggle">
+                <input id="jpegoptimForce" type="checkbox" />
+                <span>
+                  <strong>Force output</strong>
+                  <small>Keep optimized result even if larger.</small>
+                </span>
+              </label>
+              <label class="field inline-toggle">
+                <input id="jpegoptimRetry" type="checkbox" />
+                <span>
+                  <strong>Retry</strong>
+                  <small>Re-try lossy compression for a few extra bytes.</small>
+                </span>
+              </label>
+              <label class="field inline-toggle">
+                <input id="jpegoptimPreserve" type="checkbox" />
+                <span>
+                  <strong>Preserve mtime</strong>
+                  <small>Keep original modification time.</small>
+                </span>
+              </label>
+              <label class="field inline-toggle">
+                <input id="jpegoptimSaveExtra" type="checkbox" />
+                <span>
+                  <strong>Save extra data</strong>
+                  <small>Keep trailing non-JPEG data after EOI.</small>
+                </span>
+              </label>
+              <label class="field inline-toggle">
+                <input id="jpegoptimVerbose" type="checkbox" />
+                <span>
+                  <strong>Verbose</strong>
+                  <small>Print optimizer details.</small>
+                </span>
+              </label>
+              <label class="field field-span">
+                <span class="field-label">Extra flags</span>
+                <input
+                  id="jpegoptimExtraFlags"
+                  type="text"
+                  spellcheck="false"
+                  placeholder="--keep-exif"
+                />
+                <span class="field-note">
+                  Appended last, exactly as typed.
+                </span>
+              </label>
+            </div>
+          </section>
+
+          <section class="panel tool-panel">
+            <div class="section-head">
+              <div>
+                <p class="section-kicker">jpegtran</p>
+                <h2>Lossless Rewrite</h2>
+              </div>
+              <label class="toggle">
+                <input id="jpegtranEnabled" type="checkbox" />
+                <span>Enabled</span>
+              </label>
+            </div>
+            <p class="section-note">
+              Rewrites JPEG coefficients without re-encoding image quality. Good
+              for entropy optimization, progressive output, and marker-copy mode.
+            </p>
+            <div class="field-grid">
+              <label class="field inline-toggle">
+                <input id="jpegtranOptimize" type="checkbox" />
+                <span>
+                  <strong>Optimize</strong>
+                  <small>Optimize entropy encoding parameters.</small>
+                </span>
+              </label>
+              <label class="field inline-toggle">
+                <input id="jpegtranProgressive" type="checkbox" />
+                <span>
+                  <strong>Progressive</strong>
+                  <small>Create progressive JPEG output.</small>
+                </span>
+              </label>
+              <label class="field">
+                <span class="field-label">Copy markers</span>
+                <select id="jpegtranCopyMode">
+                  <option value="all">All</option>
+                  <option value="comments">Comments</option>
+                  <option value="none">None</option>
+                  <option value="icc">ICC</option>
+                </select>
+                <span class="field-note">
+                  Controls which markers survive the rewrite.
+                </span>
+              </label>
+              <label class="field inline-toggle">
+                <input id="jpegtranVerbose" type="checkbox" />
+                <span>
+                  <strong>Verbose</strong>
+                  <small>Print transform details.</small>
+                </span>
+              </label>
+              <label class="field field-span">
+                <span class="field-label">Extra flags</span>
+                <input
+                  id="jpegtranExtraFlags"
+                  type="text"
+                  spellcheck="false"
+                  placeholder="-restart 4"
+                />
+                <span class="field-note">
+                  Appended last, exactly as typed.
+                </span>
+              </label>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="section-head">
+              <div>
+                <p class="section-kicker">Shell</p>
+                <h2>Runtime Behavior</h2>
+              </div>
+            </div>
+            <div class="field-grid compact-grid">
+              <label class="field inline-toggle">
+                <input id="shellSetE" type="checkbox" />
+                <span>
+                  <strong>set -e</strong>
+                  <small>Stop on first failing command.</small>
+                </span>
+              </label>
+              <label class="field inline-toggle">
+                <input id="shellCleanupTemp" type="checkbox" />
+                <span>
+                  <strong>Cleanup temp files</strong>
+                  <small>Auto-remove temp folder when used.</small>
+                </span>
+              </label>
+              <label class="field inline-toggle">
+                <input id="shellEchoDone" type="checkbox" />
+                <span>
+                  <strong>Echo completion</strong>
+                  <small>Print final output path.</small>
+                </span>
+              </label>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="section-head">
+              <div>
+                <p class="section-kicker">Validation</p>
+                <h2>Warnings and Blocks</h2>
+              </div>
+            </div>
+            <div id="validationSummary" class="validation-stack"></div>
+          </section>
+        </section>
+
+        <aside class="output-column">
+          <section class="panel output-panel">
+            <div class="output-head">
+              <div>
+                <p class="section-kicker">Compiled Output</p>
+                <h2>Script Block</h2>
+              </div>
+              <button class="copy-button" id="copyScriptButton" type="button">
+                Copy script
+              </button>
+            </div>
+            <pre><code id="scriptBlock"></code></pre>
+          </section>
+
+          <section class="panel output-panel">
+            <div class="output-head">
+              <div>
+                <p class="section-kicker">Compiled Output</p>
+                <h2>One-Line Command</h2>
+              </div>
+              <button class="copy-button" id="copyOneLineButton" type="button">
+                Copy one-line
+              </button>
+            </div>
+            <pre><code id="oneLineOutput"></code></pre>
+          </section>
+
+          <section class="panel output-panel">
+            <div class="output-head">
+              <div>
+                <p class="section-kicker">Compiled Output</p>
+                <h2>Step Breakdown</h2>
+              </div>
+              <button class="copy-button" id="copyBreakdownButton" type="button">
+                Copy breakdown
+              </button>
+            </div>
+            <pre><code id="stepBreakdown"></code></pre>
+          </section>
+
+          <section class="panel output-panel">
+            <div class="output-head">
+              <div>
+                <p class="section-kicker">Compiled Output</p>
+                <h2>Active Flags</h2>
+              </div>
+              <button class="copy-button" id="copyFlagsButton" type="button">
+                Copy flags
+              </button>
+            </div>
+            <pre><code id="activeFlags"></code></pre>
+          </section>
+        </aside>
+      </main>
+    </div>
+
+    <script src="./jpg.js"></script>
+  </body>
+</html>

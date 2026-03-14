@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PNG Pipeline Builder</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <main class="app-grid">
+        <section class="control-column">
+          <header class="hero panel">
+            <p class="eyebrow">Local Command Compiler</p>
+            <h1>PNG Pipeline Builder</h1>
+            <p class="hero-copy">
+              Paste one PNG file path, tune the pipeline, and copy the exact
+              Terminal command. The browser never opens or uploads the file.
+            </p>
+            <div class="hero-meta">
+              <span class="meta-chip">pngquant</span>
+              <span class="meta-chip">oxipng</span>
+              <span class="meta-chip">zopflipng</span>
+            </div>
+            <p class="install-hint">
+              Install separately: <code>brew install pngquant oxipng zopfli</code>
+            </p>
+            <nav class="format-nav" aria-label="Format pages">
+              <a class="format-link active" href="./index.html">PNG Builder</a>
+              <a class="format-link" href="./jpg.html">JPEG Builder</a>
+            </nav>
+          </header>
+
+          <section class="panel">
+            <div class="section-head">
+              <div>
+                <p class="section-kicker">Preset</p>
+                <h2>Base Configuration</h2>
+              </div>
+              <span class="state-pill" id="presetStatus">Preset: Balanced</span>
+            </div>
+
+            <div class="field-grid compact-grid">
+              <label class="field">
+                <span class="field-label">Preset</span>
+                <select id="presetSelect">
+                  <option value="balanced">Balanced</option>
+                  <option value="small">Small</option>
+                  <option value="tiny">Tiny</option>
+                  <option value="lossless">Lossless only</option>
+                </select>
+              </label>
+              <div class="field action-field">
+                <span class="field-label">Reset</span>
+                <button class="secondary-button" id="resetPresetButton" type="button">
+                  Reload preset
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="section-head">
+              <div>
+                <p class="section-kicker">Paths</p>
+                <h2>Single File</h2>
+              </div>
+            </div>
+
+            <div class="field-grid">
+              <label class="field field-span">
+                <span class="field-label">Input file path</span>
+                <input
+                  id="inputFile"
+                  type="text"
+                  spellcheck="false"
+                  placeholder="/Users/you/Desktop/icon.png"
+                />
+                <span class="field-note">
+                  Text only. The app does not read the file.
+                </span>
+              </label>
+
+              <label class="field">
+                <span class="field-label">Output suffix</span>
+                <input id="outputSuffix" type="text" spellcheck="false" />
+                <span class="field-note">
+                  Defaults to the runtime shell expression <code>$(date +%d%H%M%S)</code>.
+                </span>
+              </label>
+
+              <div class="field output-preview">
+                <span class="field-label">Derived output path</span>
+                <code id="derivedOutput" class="derived-path">Waiting for input</code>
+                <span class="field-note">
+                  This is the final destination used by the compiled command.
+                </span>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="section-head">
+              <div>
+                <p class="section-kicker">Pipeline</p>
+                <h2>Fixed Order</h2>
+              </div>
+            </div>
+            <p class="pipeline-order">pngquant → oxipng → zopflipng</p>
+            <p class="section-note">
+              The order is fixed so the generated command stays sensible:
+              quantize first, clean up second, optional slow final pass last.
+            </p>
+          </section>
+
+          <section class="panel tool-panel">
+            <div class="section-head">
+              <div>
+                <p class="section-kicker">pngquant</p>
+                <h2>Main Lossy Step</h2>
+              </div>
+              <label class="toggle">
+                <input id="pngquantEnabled" type="checkbox" />
+                <span>Enabled</span>
+              </label>
+            </div>
+            <p class="section-note">
+              Biggest size drop. Converts to a more efficient 8-bit PNG when it
+              can do so within the selected quality range.
+            </p>
+            <div class="field-grid">
+              <label class="field">
+                <span class="field-label">Quality min</span>
+                <input id="pngquantQualityMin" type="number" min="0" max="100" />
+                <span class="field-note">Lower bound for acceptable quality.</span>
+              </label>
+              <label class="field">
+                <span class="field-label">Quality max</span>
+                <input id="pngquantQualityMax" type="number" min="0" max="100" />
+                <span class="field-note">Upper bound target for the encoder.</span>
+              </label>
+              <label class="field">
+                <span class="field-label">Speed</span>
+                <input id="pngquantSpeed" type="number" min="1" max="11" />
+                <span class="field-note">1 is slower and usually smaller.</span>
+              </label>
+              <label class="field inline-toggle">
+                <input id="pngquantStrip" type="checkbox" />
+                <span>
+                  <strong>Strip metadata</strong>
+                  <small>Remove optional chunks.</small>
+                </span>
+              </label>
+              <label class="field inline-toggle">
+                <input id="pngquantNofs" type="checkbox" />
+                <span>
+                  <strong>Disable dithering</strong>
+                  <small>Maps to <code>--nofs</code>.</small>
+                </span>
+              </label>
+              <label class="field">
+                <span class="field-label">Floyd Dithering 0-1</span>
+                <input
+                  id="pngquantFloyd"
+                  type="number"
+                  min="0"
+                  max="1"
+                  step="0.05"
+                  placeholder="1"
+                />
+                <span class="field-note">Blank leaves at default 1.</span>
+              </label>
+              <label class="field">
+                <span class="field-label">Posterize</span>
+                <input
+                  id="pngquantPosterize"
+                  type="number"
+                  min="1"
+                  max="8"
+                  placeholder="0-4"
+                />
+                <span class="field-note">Reduce color precision before quantizing.</span>
+              </label>
+              <label class="field inline-toggle">
+                <input id="pngquantSkipIfLarger" type="checkbox" />
+                <span>
+                  <strong>Skip if larger</strong>
+                  <small>Do not write worse output.</small>
+                </span>
+              </label>
+              <label class="field inline-toggle">
+                <input id="pngquantVerbose" type="checkbox" />
+                <span>
+                  <strong>Verbose</strong>
+                  <small>Print compression details.</small>
+                </span>
+              </label>
+              <label class="field field-span">
+                <span class="field-label">Extra flags</span>
+                <input
+                  id="pngquantExtraFlags"
+                  type="text"
+                  spellcheck="false"
+                  placeholder="--floyd=0.75"
+                />
+                <span class="field-note">
+                  Appended last, exactly as typed.
+                </span>
+              </label>
+            </div>
+          </section>
+
+          <section class="panel tool-panel">
+            <div class="section-head">
+              <div>
+                <p class="section-kicker">oxipng</p>
+                <h2>Lossless Cleanup</h2>
+              </div>
+              <label class="toggle">
+                <input id="oxipngEnabled" type="checkbox" />
+                <span>Enabled</span>
+              </label>
+            </div>
+            <p class="section-note">
+              Metadata stripping and structural optimization. The alpha option is
+              visually lossless but still technically lossy.
+            </p>
+            <div class="field-grid">
+              <label class="field">
+                <span class="field-label">Optimization level</span>
+                <select id="oxipngLevel">
+                  <option value="0">0</option>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5</option>
+                  <option value="6">6</option>
+                </select>
+                <span class="field-note">Higher is slower, usually smaller.</span>
+              </label>
+              <label class="field">
+                <span class="field-label">Strip mode</span>
+                <select id="oxipngStripMode">
+                  <option value="none">None</option>
+                  <option value="safe">Safe</option>
+                  <option value="all">All</option>
+                </select>
+                <span class="field-note">Controls metadata removal.</span>
+              </label>
+              <label class="field">
+                <span class="field-label">Interlace mode</span>
+                <select id="oxipngInterlace">
+                  <option value="off">Off</option>
+                  <option value="on">On</option>
+                  <option value="keep">Keep</option>
+                </select>
+                <span class="field-note">Maps to <code>--interlace</code>.</span>
+              </label>
+              <label class="field inline-toggle lossy-toggle">
+                <input id="oxipngAlpha" type="checkbox" />
+                <span>
+                  <strong>Optimize alpha</strong>
+                  <small>Technically lossy.</small>
+                </span>
+              </label>
+              <label class="field inline-toggle">
+                <input id="oxipngFix" type="checkbox" />
+                <span>
+                  <strong>Fix</strong>
+                  <small>Try to process mildly invalid PNGs.</small>
+                </span>
+              </label>
+              <label class="field inline-toggle">
+                <input id="oxipngPreserve" type="checkbox" />
+                <span>
+                  <strong>Preserve file attrs</strong>
+                  <small>Keep timestamps and permissions.</small>
+                </span>
+              </label>
+              <label class="field inline-toggle">
+                <input id="oxipngForce" type="checkbox" />
+                <span>
+                  <strong>Force output</strong>
+                  <small>Write output even if larger.</small>
+                </span>
+              </label>
+              <label class="field inline-toggle">
+                <input id="oxipngVerbose" type="checkbox" />
+                <span>
+                  <strong>Verbose</strong>
+                  <small>Print optimizer details.</small>
+                </span>
+              </label>
+              <label class="field field-span">
+                <span class="field-label">Extra flags</span>
+                <input
+                  id="oxipngExtraFlags"
+                  type="text"
+                  spellcheck="false"
+                  placeholder="--timeout 30"
+                />
+                <span class="field-note">
+                  Appended last, exactly as typed.
+                </span>
+              </label>
+            </div>
+          </section>
+
+          <section class="panel tool-panel">
+            <div class="section-head">
+              <div>
+                <p class="section-kicker">zopflipng</p>
+                <h2>Slow Final Pass</h2>
+              </div>
+              <label class="toggle">
+                <input id="zopflipngEnabled" type="checkbox" />
+                <span>Enabled</span>
+              </label>
+            </div>
+            <p class="section-note">
+              Slowest step in the chain. Useful when every last KB matters.
+            </p>
+            <div class="field-grid">
+              <label class="field inline-toggle">
+                <input id="zopflipngMax" type="checkbox" />
+                <span>
+                  <strong>Max mode</strong>
+                  <small>Use the heavier compression path.</small>
+                </span>
+              </label>
+              <label class="field">
+                <span class="field-label">Iterations</span>
+                <input
+                  id="zopflipngIterations"
+                  type="number"
+                  min="1"
+                  placeholder="15"
+                />
+                <span class="field-note">Higher is slower and can compress better.</span>
+              </label>
+              <label class="field inline-toggle lossy-toggle">
+                <input id="zopflipngLossyTransparent" type="checkbox" />
+                <span>
+                  <strong>Lossy transparent</strong>
+                  <small>Discard hidden transparent colors.</small>
+                </span>
+              </label>
+              <label class="field inline-toggle lossy-toggle">
+                <input id="zopflipngLossy8bit" type="checkbox" />
+                <span>
+                  <strong>Lossy 8-bit</strong>
+                  <small>Convert 16-bit channels to 8-bit.</small>
+                </span>
+              </label>
+              <label class="field inline-toggle">
+                <input id="zopflipngVerbose" type="checkbox" />
+                <span>
+                  <strong>Verbose</strong>
+                  <small>Print optimization details.</small>
+                </span>
+              </label>
+              <label class="field field-span">
+                <span class="field-label">Extra flags</span>
+                <input
+                  id="zopflipngExtraFlags"
+                  type="text"
+                  spellcheck="false"
+                  placeholder="--filters=01234mepb"
+                />
+                <span class="field-note">
+                  Appended last, exactly as typed.
+                </span>
+              </label>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="section-head">
+              <div>
+                <p class="section-kicker">Shell</p>
+                <h2>Runtime Behavior</h2>
+              </div>
+            </div>
+            <div class="field-grid compact-grid">
+              <label class="field inline-toggle">
+                <input id="shellSetE" type="checkbox" />
+                <span>
+                  <strong>set -e</strong>
+                  <small>Stop on first failing command.</small>
+                </span>
+              </label>
+              <label class="field inline-toggle">
+                <input id="shellCleanupTemp" type="checkbox" />
+                <span>
+                  <strong>Cleanup temp files</strong>
+                  <small>Auto-remove temp folder when needed.</small>
+                </span>
+              </label>
+              <label class="field inline-toggle">
+                <input id="shellEchoDone" type="checkbox" />
+                <span>
+                  <strong>Echo completion</strong>
+                  <small>Print final output path.</small>
+                </span>
+              </label>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="section-head">
+              <div>
+                <p class="section-kicker">Validation</p>
+                <h2>Warnings and Blocks</h2>
+              </div>
+            </div>
+            <div id="validationSummary" class="validation-stack"></div>
+          </section>
+        </section>
+
+        <aside class="output-column">
+          <section class="panel output-panel">
+            <div class="output-head">
+              <div>
+                <p class="section-kicker">Compiled Output</p>
+                <h2>Script Block</h2>
+              </div>
+              <button class="copy-button" id="copyScriptButton" type="button">
+                Copy script
+              </button>
+            </div>
+            <pre><code id="scriptBlock"></code></pre>
+          </section>
+
+          <section class="panel output-panel">
+            <div class="output-head">
+              <div>
+                <p class="section-kicker">Compiled Output</p>
+                <h2>One-Line Command</h2>
+              </div>
+              <button class="copy-button" id="copyOneLineButton" type="button">
+                Copy one-line
+              </button>
+            </div>
+            <pre><code id="oneLineOutput"></code></pre>
+          </section>
+
+          <section class="panel output-panel">
+            <div class="output-head">
+              <div>
+                <p class="section-kicker">Compiled Output</p>
+                <h2>Step Breakdown</h2>
+              </div>
+              <button class="copy-button" id="copyBreakdownButton" type="button">
+                Copy breakdown
+              </button>
+            </div>
+            <pre><code id="stepBreakdown"></code></pre>
+          </section>
+
+          <section class="panel output-panel">
+            <div class="output-head">
+              <div>
+                <p class="section-kicker">Compiled Output</p>
+                <h2>Active Flags</h2>
+              </div>
+              <button class="copy-button" id="copyFlagsButton" type="button">
+                Copy flags
+              </button>
+            </div>
+            <pre><code id="activeFlags"></code></pre>
+          </section>
+        </aside>
+      </main>
+    </div>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
