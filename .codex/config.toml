@@ -1,0 +1,23 @@
+[agents]
+max_threads = 3
+max_depth = 1
+
+[agents.researcher]
+description = "Research agent for planning phase."
+config_file = "agents/researcher.toml"
+
+[agents.implementer]
+description = "Implementation executor — follows plans step by step."
+config_file = "agents/implementer.toml"
+
+[agents.reviewer]
+description = "Code review and verification agent."
+config_file = "agents/reviewer.toml"
+
+[agents.explorer]
+description = "Fast codebase explorer for read-heavy tasks."
+config_file = "agents/explorer.toml"
+
+[agents.debugger]
+description = "Scientific hypothesis-driven debugging."
+config_file = "agents/debugger.toml"

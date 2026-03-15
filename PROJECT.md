@@ -26,3 +26,5 @@ Shared styling lives in `styles.css`.
 - Zero network activity — everything runs locally in the browser.
 - The browser never reads or processes image files; it only builds the command string.
 - No dependencies or build tooling required.
+
+Read docs/harness.md for agent workflow instructions.
