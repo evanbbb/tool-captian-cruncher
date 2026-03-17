@@ -1,13 +1,14 @@
 # Captain Cruncher
 
-A browser-based set of local image utilities. Most pages build image-compression terminal commands from pasted file paths, and the contrast page samples uploaded images locally in-browser for accessibility scoring.
+A static browser app for local image workflows. The PNG, JPEG, and GIF pages generate terminal commands for compression pipelines, the Contrast page samples uploaded images locally for accessibility scoring, and the How To page explains the macOS setup flow.
 
-## Formats
+## Pages
 
-- **PNG** — pngquant, oxipng, zopflipng
-- **JPEG** — jpegoptim, jpegtran
-- **GIF** — ffmpeg, gifski
+- **PNG Builder** — pngquant, oxipng, zopflipng command builder
+- **JPEG Builder** — jpegoptim, jpegtran command builder
+- **GIF Builder** — ffmpeg, gifski command builder
 - **Contrast** — local foreground/background sampling with WCAG and APCA scoring
+- **How To** — macOS install and terminal workflow guide
 
 ## Prerequisites
 
@@ -19,29 +20,42 @@ brew install pngquant oxipng zopfli jpegoptim jpeg-turbo ffmpeg gifski
 
 ## Usage
 
-Open `index.html` (PNG), `jpg.html` (JPEG), `gif.html` (GIF), or `contrast.html` (Contrast) in any modern browser. No build step or server required.
+Open `index.html`, `jpg.html`, `gif.html`, `contrast.html`, or `how-to.html` in any modern browser. No build step or server required.
+
+For the command-builder pages:
 
 1. Paste a source file path
-2. Choose a preset when available or adjust individual tool settings
-3. Copy the generated shell command
-4. Run it in your terminal
+2. Choose a preset when available or adjust the step-level settings
+3. Copy the generated one-line command
+4. Run it in Terminal
 
-For the contrast tool:
+For the contrast page:
 
-1. Upload or drop a local image
-2. Pick one foreground point and one background point
-3. Review WCAG 2.x and APCA scores
+1. Drop or choose a local image
+2. Click `Pick Foreground` or `Pick Background`
+3. Hover the image to inspect the live 3×3 sample
+4. Click to lock each sample and review WCAG 2.x and APCA scores
+
+For the How To page:
+
+1. Install Homebrew and the required CLI tools
+2. Copy a pathname from Finder
+3. Change into the source folder in Terminal
+4. Paste and run the generated command
 
 ## Project Structure
 
 ```
-index.html    — PNG pipeline builder UI
-app.js        — PNG pipeline logic and command generation
-jpg.html      — JPEG pipeline builder UI
-jpg.js        — JPEG pipeline logic and command generation
-gif.html      — GIF builder UI
-gif.js        — GIF command generation logic
-contrast.html — Contrast accessibility sampler UI
-contrast.js   — Contrast image sampling and scoring logic
-styles.css    — Shared styles
+index.html                  — PNG pipeline builder UI
+jpg.html                    — JPEG pipeline builder UI
+gif.html                    — GIF builder UI
+contrast.html               — Contrast accessibility sampler UI
+how-to.html                 — macOS setup and usage guide
+css/styles.css              — Shared styles
+js/png.js                   — PNG pipeline logic and command generation
+js/jpg.js                   — JPEG pipeline logic and command generation
+js/gif.js                   — GIF command generation logic
+js/contrast.js              — Contrast image sampling and scoring logic
+assets/icons/favicon.svg    — Shared favicon asset
+assets/images/cruncher.png  — Sidebar mascot image
 ```
