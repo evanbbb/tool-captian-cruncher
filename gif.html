@@ -61,6 +61,53 @@
               </p>
             </header>
 
+            <section class="panel tips-panel" id="gifTipsPanel" data-expanded="false">
+              <button
+                class="tips-toggle"
+                id="gifTipsToggle"
+                type="button"
+                aria-expanded="false"
+                aria-controls="gifTipsBody"
+              >
+                <div class="tips-toggle-copy">
+                  <p class="section-kicker">Tips</p>
+                  <h2 class="typography-h2">Tips for Better GIF Compression</h2>
+                </div>
+                <span class="tips-toggle-icon" aria-hidden="true">
+                  <i class="ph ph-caret-down"></i>
+                </span>
+              </button>
+
+              <div class="tips-body" id="gifTipsBody" hidden>
+                <p class="tips-rule typography-body-muted">
+                  <strong>General rule:</strong> GIFs compress best when large pixel areas remain
+                  identical between frames and the overall color palette stays
+                  small and stable.
+                </p>
+
+                <p class="tips-subhead typography-label">Pre-Processing Tips</p>
+
+                <ul class="tips-list typography-body-muted">
+                  <li>Cut motion where possible. Static backgrounds and fewer moving regions compress better.</li>
+                  <li>Simplify backgrounds. Flat color or blurred backgrounds compress better than detailed scenes.</li>
+                  <li>Lower frame rate before export.</li>
+                  <li>Reduce hue and saturation range where possible.</li>
+                  <li>Limit color variety. Gradients, glow, noise, film grain, and subtle texture increase file size.</li>
+                  <li>Avoid transparency where possible. Hard edges on solid backgrounds compress better than soft translucent edges.</li>
+                  <li>Avoid flicker. Rapid brightness changes, flashing UI, and grainy animation increase complexity.</li>
+                  <li>Hold on keyframes longer. Fewer unique in-between frames keep motion readable while reducing change.</li>
+                  <li>Use clean edges and larger shapes. Tiny text, thin lines, and fine detail tend to shimmer and expand the palette.</li>
+                  <li>Preprocess the source. Reduce noise, limit colors, and trim unnecessary motion before encoding.</li>
+                  <li>Keep colors stable between frames. Color shifts or grading changes reduce compression efficiency.</li>
+                  <li>Avoid subtle background motion. Moving shadows, gradients, or noise fields force more pixel changes.</li>
+                  <li>Prefer clear shapes over smooth gradients. Gradients often introduce many similar colors.</li>
+                  <li>Lock camera movement where possible. Even slight camera drift forces most pixels to change each frame.</li>
+                  <li>Use solid fills instead of textures. Texture overlays introduce many small color variations.</li>
+                  <li>Reduce dithering during preprocessing. Dither patterns introduce noise and increase frame differences.</li>
+                </ul>
+              </div>
+            </section>
+
             <section class="panel">
               <div class="section-head">
                 <p class="section-kicker">Path</p>
@@ -107,8 +154,8 @@
                 </div>
               </div>
               <p class="section-note typography-body-muted">
-                Reads the source video, applies trim points, and extracts PNG
-                frames into a temporary directory for the next step.
+                Reads the source video and extracts PNG frames into a temporary
+                directory for the next step.
               </p>
 
               <div class="field-grid">
@@ -123,22 +170,6 @@
                   <input id="gifFps" type="range" min="2" max="30" step="1" />
                   <span class="field-note typography-caption">
                     Controls frame extraction and the final GIF playback speed.
-                  </span>
-                </label>
-
-                <label class="field">
-                  <span class="field-label typography-label">Trim start</span>
-                  <input id="gifTrimStart" type="number" min="0" step="0.1" />
-                  <span class="field-note typography-caption">
-                    Optional. Seconds from the start of the source file.
-                  </span>
-                </label>
-
-                <label class="field">
-                  <span class="field-label typography-label">Trim end</span>
-                  <input id="gifTrimEnd" type="number" min="0" step="0.1" placeholder="Optional" />
-                  <span class="field-note typography-caption">
-                    Optional. Must be greater than trim start when set.
                   </span>
                 </label>
 
@@ -166,7 +197,7 @@
               </div>
               <p class="section-note typography-body-muted">
                 Assembles the extracted PNG frames into the final GIF. Quality
-                and loop behavior live here.
+                and compression tuning live here.
               </p>
 
               <div class="field-grid">
@@ -184,11 +215,39 @@
                   </span>
                 </label>
 
-                <label class="field inline-toggle field-span">
-                  <input id="gifLoop" type="checkbox" />
+                <label class="field slider-field">
+                  <span class="slider-head">
+                    <span class="field-label typography-label">Motion quality</span>
+                    <span class="slider-readout">
+                      <strong id="gifMotionQualityValue">80</strong>
+                      <span class="unit">/100</span>
+                    </span>
+                  </span>
+                  <input id="gifMotionQuality" type="range" min="1" max="100" step="1" />
+                  <span class="field-note typography-caption">
+                    Lower values reduce motion detail to save space.
+                  </span>
+                </label>
+
+                <label class="field slider-field">
+                  <span class="slider-head">
+                    <span class="field-label typography-label">Lossy quality</span>
+                    <span class="slider-readout">
+                      <strong id="gifLossyQualityValue">60</strong>
+                      <span class="unit">/100</span>
+                    </span>
+                  </span>
+                  <input id="gifLossyQuality" type="range" min="1" max="100" step="1" />
+                  <span class="field-note typography-caption">
+                    Lower values allow more artifacts and smaller files.
+                  </span>
+                </label>
+
+                <label class="field inline-toggle">
+                  <input id="gifBounce" type="checkbox" />
                   <span>
-                    <strong>Loop forever</strong>
-                    <small>Uses gifski repeat mode for an infinite loop.</small>
+                    <strong>Bounce</strong>
+                    <small>Play forward, then backward.</small>
                   </span>
                 </label>
 
@@ -198,7 +257,7 @@
                     id="gifskiExtraFlags"
                     type="text"
                     spellcheck="false"
-                    placeholder="--fast --motion-quality 80"
+                    placeholder="--motion-quality 80 --lossy-quality 60"
                   />
                   <span class="field-note typography-caption">
                     Appended last, exactly as typed.
@@ -220,12 +279,8 @@
                   <strong class="stat-card-value" id="gifFpsStat">15 fps</strong>
                 </div>
                 <div class="stat-card">
-                  <span class="stat-card-label typography-caption">Trim</span>
-                  <strong class="stat-card-value" id="gifTrimStat">Full source</strong>
-                </div>
-                <div class="stat-card">
-                  <span class="stat-card-label typography-caption">Loop</span>
-                  <strong class="stat-card-value" id="gifLoopStat">Forever</strong>
+                  <span class="stat-card-label typography-caption">Gifski</span>
+                  <strong class="stat-card-value" id="gifQualityStat">Q90 M80 L60</strong>
                 </div>
               </div>
             </section>

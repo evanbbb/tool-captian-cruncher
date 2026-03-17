@@ -23,13 +23,13 @@ const DEFAULT_STATE = {
   tools: {
     ffmpeg: {
       fps: 15,
-      trimStart: 0,
-      trimEnd: "",
       extraFlags: "",
     },
     gifski: {
       quality: 90,
-      loop: true,
+      motionQuality: 80,
+      lossyQuality: 60,
+      bounce: false,
       extraFlags: "",
     },
   },
@@ -44,11 +44,11 @@ const FIELD_BINDINGS = [
   { id: "inputFile", path: ["paths", "inputFile"], kind: "text" },
   { id: "outputSuffix", path: ["paths", "outputSuffix"], kind: "text" },
   { id: "gifFps", path: ["tools", "ffmpeg", "fps"], kind: "int" },
-  { id: "gifTrimStart", path: ["tools", "ffmpeg", "trimStart"], kind: "floatOrEmpty" },
-  { id: "gifTrimEnd", path: ["tools", "ffmpeg", "trimEnd"], kind: "floatOrEmpty" },
   { id: "ffmpegExtraFlags", path: ["tools", "ffmpeg", "extraFlags"], kind: "text" },
   { id: "gifQuality", path: ["tools", "gifski", "quality"], kind: "int" },
-  { id: "gifLoop", path: ["tools", "gifski", "loop"], kind: "checkbox" },
+  { id: "gifMotionQuality", path: ["tools", "gifski", "motionQuality"], kind: "int" },
+  { id: "gifLossyQuality", path: ["tools", "gifski", "lossyQuality"], kind: "int" },
+  { id: "gifBounce", path: ["tools", "gifski", "bounce"], kind: "checkbox" },
   { id: "gifskiExtraFlags", path: ["tools", "gifski", "extraFlags"], kind: "text" },
   { id: "shellSetE", path: ["shell", "setE"], kind: "checkbox" },
   { id: "shellCleanupTemp", path: ["shell", "cleanupTemp"], kind: "checkbox" },
@@ -61,14 +61,18 @@ const dom = {
   oneLineOutput: document.getElementById("oneLineOutput"),
   stepBreakdown: document.getElementById("stepBreakdown"),
   activeFlags: document.getElementById("activeFlags"),
+  gifTipsPanel: document.getElementById("gifTipsPanel"),
+  gifTipsToggle: document.getElementById("gifTipsToggle"),
+  gifTipsBody: document.getElementById("gifTipsBody"),
   copyOneLineButton: document.getElementById("copyOneLineButton"),
   copyBreakdownButton: document.getElementById("copyBreakdownButton"),
   copyFlagsButton: document.getElementById("copyFlagsButton"),
   gifQualityValue: document.getElementById("gifQualityValue"),
+  gifMotionQualityValue: document.getElementById("gifMotionQualityValue"),
+  gifLossyQualityValue: document.getElementById("gifLossyQualityValue"),
   gifFpsValue: document.getElementById("gifFpsValue"),
   gifFpsStat: document.getElementById("gifFpsStat"),
-  gifLoopStat: document.getElementById("gifLoopStat"),
-  gifTrimStat: document.getElementById("gifTrimStat"),
+  gifQualityStat: document.getElementById("gifQualityStat"),
 };
 
 let state = deepClone(DEFAULT_STATE);
@@ -162,36 +166,6 @@ function joinArgs(parts) {
   return parts.filter(Boolean).join(" ");
 }
 
-function formatNumber(value) {
-  const numericValue = Number(value);
-  if (!Number.isFinite(numericValue)) {
-    return "";
-  }
-
-  if (Number.isInteger(numericValue)) {
-    return String(numericValue);
-  }
-
-  return numericValue.toFixed(2).replace(/\.?0+$/, "");
-}
-
-function normalizedTrimStart(settings) {
-  return settings.trimStart === "" ? 0 : Number(settings.trimStart);
-}
-
-function buildTrimSummary(settings) {
-  const trimStart = normalizedTrimStart(settings);
-  if (settings.trimEnd !== "") {
-    return `${formatNumber(trimStart)}s to ${formatNumber(settings.trimEnd)}s`;
-  }
-
-  if (trimStart > 0) {
-    return `From ${formatNumber(trimStart)}s`;
-  }
-
-  return "Full source";
-}
-
 function addIntegerRangeError(errors, label, value, minimum, maximum) {
   if (value === "") {
     return;
@@ -207,21 +181,6 @@ function addIntegerRangeError(errors, label, value, minimum, maximum) {
   }
 }
 
-function addMinimumError(errors, label, value, minimum) {
-  if (value === "") {
-    return;
-  }
-
-  if (!Number.isFinite(value)) {
-    errors.push(`${label} must be a number.`);
-    return;
-  }
-
-  if (value < minimum) {
-    errors.push(`${label} must be at least ${minimum}.`);
-  }
-}
-
 function buildValidation(currentState, outputPath) {
   const errors = [];
   const warnings = [];
@@ -230,7 +189,6 @@ function buildValidation(currentState, outputPath) {
   const parsedInput = parseFilePath(normalizedInput);
   const ffmpegSettings = currentState.tools.ffmpeg;
   const gifskiSettings = currentState.tools.gifski;
-  const trimStart = normalizedTrimStart(ffmpegSettings);
 
   if (!normalizedInput) {
     errors.push("Input file path is required.");
@@ -245,13 +203,9 @@ function buildValidation(currentState, outputPath) {
   }
 
   addIntegerRangeError(errors, "gifski quality", gifskiSettings.quality, 1, 100);
+  addIntegerRangeError(errors, "gifski motion quality", gifskiSettings.motionQuality, 1, 100);
+  addIntegerRangeError(errors, "gifski lossy quality", gifskiSettings.lossyQuality, 1, 100);
   addIntegerRangeError(errors, "ffmpeg fps", ffmpegSettings.fps, 2, 30);
-  addMinimumError(errors, "Trim start", ffmpegSettings.trimStart, 0);
-  addMinimumError(errors, "Trim end", ffmpegSettings.trimEnd, 0);
-
-  if (ffmpegSettings.trimEnd !== "" && Number(ffmpegSettings.trimEnd) <= trimStart) {
-    errors.push("Trim end must be greater than trim start.");
-  }
 
   if (normalizedInput && outputPath && normalizedInput === outputPath) {
     errors.push("Derived output path matches the input path.");
@@ -304,18 +258,7 @@ function buildFfmpegFilter(settings) {
 
 function buildFfmpegFlagParts(settings) {
   const parts = [];
-  const trimStart = normalizedTrimStart(settings);
-
-  if (trimStart > 0) {
-    parts.push("-ss", formatNumber(trimStart));
-  }
-
   parts.push("-i", '"$IN"');
-
-  if (settings.trimEnd !== "") {
-    parts.push("-to", formatNumber(settings.trimEnd));
-  }
-
   parts.push("-vf", `"${buildFfmpegFilter(settings)}"`);
   parts.push("-y");
 
@@ -328,16 +271,6 @@ function buildFfmpegFlagParts(settings) {
 
 function buildFfmpegActiveFlagParts(settings) {
   const parts = [];
-  const trimStart = normalizedTrimStart(settings);
-
-  if (trimStart > 0) {
-    parts.push("-ss", formatNumber(trimStart));
-  }
-
-  if (settings.trimEnd !== "") {
-    parts.push("-to", formatNumber(settings.trimEnd));
-  }
-
   parts.push("-vf", `"${buildFfmpegFilter(settings)}"`);
   parts.push("-y");
 
@@ -359,12 +292,17 @@ function buildGifskiFlagParts(currentState) {
   return [
     "--quality",
     String(gifskiSettings.quality),
+    "--motion-quality",
+    String(gifskiSettings.motionQuality),
+    "--lossy-quality",
+    String(gifskiSettings.lossyQuality),
     "--fps",
     String(ffmpegSettings.fps),
     "--width",
     "9999",
     "--repeat",
-    gifskiSettings.loop ? "0" : "-1",
+    "0",
+    gifskiSettings.bounce ? "--bounce" : "",
     gifskiSettings.extraFlags.trim(),
   ];
 }
@@ -458,10 +396,11 @@ function buildActiveFlags(currentState) {
 function buildStats(currentState) {
   return {
     qualityValue: String(currentState.tools.gifski.quality),
+    motionQualityValue: String(currentState.tools.gifski.motionQuality),
+    lossyQualityValue: String(currentState.tools.gifski.lossyQuality),
     fpsValue: String(currentState.tools.ffmpeg.fps),
     fpsStat: `${currentState.tools.ffmpeg.fps} fps`,
-    loopStat: currentState.tools.gifski.loop ? "Forever" : "No loop",
-    trimStat: buildTrimSummary(currentState.tools.ffmpeg),
+    qualityStat: `Q${currentState.tools.gifski.quality} M${currentState.tools.gifski.motionQuality} L${currentState.tools.gifski.lossyQuality}`,
   };
 }
 
@@ -578,10 +517,11 @@ function renderOutputs() {
   dom.copyFlagsButton.disabled = !artifacts.canCopy;
 
   dom.gifQualityValue.textContent = artifacts.stats.qualityValue;
+  dom.gifMotionQualityValue.textContent = artifacts.stats.motionQualityValue;
+  dom.gifLossyQualityValue.textContent = artifacts.stats.lossyQualityValue;
   dom.gifFpsValue.textContent = artifacts.stats.fpsValue;
   dom.gifFpsStat.textContent = artifacts.stats.fpsStat;
-  dom.gifLoopStat.textContent = artifacts.stats.loopStat;
-  dom.gifTrimStat.textContent = artifacts.stats.trimStat;
+  dom.gifQualityStat.textContent = artifacts.stats.qualityStat;
 
   renderValidation(artifacts.validation);
 }
@@ -614,6 +554,19 @@ async function copyText(text, button) {
   }
 }
 
+function bindTipsToggle() {
+  if (!dom.gifTipsPanel || !dom.gifTipsToggle || !dom.gifTipsBody) {
+    return;
+  }
+
+  dom.gifTipsToggle.addEventListener("click", () => {
+    const nextExpanded = dom.gifTipsToggle.getAttribute("aria-expanded") !== "true";
+    dom.gifTipsToggle.setAttribute("aria-expanded", String(nextExpanded));
+    dom.gifTipsPanel.dataset.expanded = String(nextExpanded);
+    dom.gifTipsBody.hidden = !nextExpanded;
+  });
+}
+
 function bindFields() {
   FIELD_BINDINGS.forEach((binding) => {
     const element = document.getElementById(binding.id);
@@ -639,5 +592,6 @@ function bindFields() {
   });
 }
 
+bindTipsToggle();
 bindFields();
 render();
