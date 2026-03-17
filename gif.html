@@ -96,30 +96,16 @@
             <section class="panel tool-panel">
               <div class="section-head">
                 <div>
-                  <p class="section-kicker">GIF</p>
-                  <h2 class="typography-h2">Encoding Controls</h2>
+                  <p class="section-kicker">ffmpeg</p>
+                  <h2 class="typography-h2">Frame Extraction</h2>
                 </div>
               </div>
               <p class="section-note typography-body-muted">
-                Quality and fps control the final animation. Trim values are
-                passed directly to ffmpeg before frame extraction.
+                Reads the source video, applies trim points, and extracts PNG
+                frames into a temporary directory for the next step.
               </p>
 
               <div class="field-grid">
-                <label class="field slider-field">
-                  <span class="slider-head">
-                    <span class="field-label typography-label">Quality</span>
-                    <span class="slider-readout">
-                      <strong id="gifQualityValue">90</strong>
-                      <span class="unit">/100</span>
-                    </span>
-                  </span>
-                  <input id="gifQuality" type="range" min="1" max="100" step="1" />
-                  <span class="field-note typography-caption">
-                    Lower quality is usually smaller.
-                  </span>
-                </label>
-
                 <label class="field slider-field">
                   <span class="slider-head">
                     <span class="field-label typography-label">FPS</span>
@@ -130,7 +116,7 @@
                   </span>
                   <input id="gifFps" type="range" min="2" max="30" step="1" />
                   <span class="field-note typography-caption">
-                    Higher fps looks smoother but can get heavy fast.
+                    Controls frame extraction and the final GIF playback speed.
                   </span>
                 </label>
 
@@ -150,6 +136,48 @@
                   </span>
                 </label>
 
+                <label class="field field-span">
+                  <span class="field-label typography-label">Extra flags</span>
+                  <input
+                    id="ffmpegExtraFlags"
+                    type="text"
+                    spellcheck="false"
+                    placeholder="-pix_fmt rgba"
+                  />
+                  <span class="field-note typography-caption">
+                    Appended last, exactly as typed.
+                  </span>
+                </label>
+              </div>
+            </section>
+
+            <section class="panel tool-panel">
+              <div class="section-head">
+                <div>
+                  <p class="section-kicker">gifski</p>
+                  <h2 class="typography-h2">GIF Assembly</h2>
+                </div>
+              </div>
+              <p class="section-note typography-body-muted">
+                Assembles the extracted PNG frames into the final GIF. Quality
+                and loop behavior live here.
+              </p>
+
+              <div class="field-grid">
+                <label class="field slider-field">
+                  <span class="slider-head">
+                    <span class="field-label typography-label">Quality</span>
+                    <span class="slider-readout">
+                      <strong id="gifQualityValue">90</strong>
+                      <span class="unit">/100</span>
+                    </span>
+                  </span>
+                  <input id="gifQuality" type="range" min="1" max="100" step="1" />
+                  <span class="field-note typography-caption">
+                    Lower quality is usually smaller.
+                  </span>
+                </label>
+
                 <label class="field inline-toggle field-span">
                   <input id="gifLoop" type="checkbox" />
                   <span>
@@ -157,20 +185,41 @@
                     <small>Uses gifski repeat mode for an infinite loop.</small>
                   </span>
                 </label>
-              </div>
 
+                <label class="field field-span">
+                  <span class="field-label typography-label">Extra flags</span>
+                  <input
+                    id="gifskiExtraFlags"
+                    type="text"
+                    spellcheck="false"
+                    placeholder="--fast --motion-quality 80"
+                  />
+                  <span class="field-note typography-caption">
+                    Appended last, exactly as typed.
+                  </span>
+                </label>
+              </div>
+            </section>
+
+            <section class="panel">
+              <div class="section-head">
+                <div>
+                  <p class="section-kicker">Summary</p>
+                  <h2 class="typography-h2">Current Output</h2>
+                </div>
+              </div>
               <div class="stats-grid">
                 <div class="stat-card">
-                  <span class="stat-card-label typography-caption">GIF FPS</span>
+                  <span class="stat-card-label typography-caption">FFmpeg FPS</span>
                   <strong class="stat-card-value" id="gifFpsStat">15 fps</strong>
-                </div>
-                <div class="stat-card">
-                  <span class="stat-card-label typography-caption">Loop</span>
-                  <strong class="stat-card-value" id="gifLoopStat">Forever</strong>
                 </div>
                 <div class="stat-card">
                   <span class="stat-card-label typography-caption">Trim</span>
                   <strong class="stat-card-value" id="gifTrimStat">Full source</strong>
+                </div>
+                <div class="stat-card">
+                  <span class="stat-card-label typography-caption">Loop</span>
+                  <strong class="stat-card-value" id="gifLoopStat">Forever</strong>
                 </div>
               </div>
             </section>

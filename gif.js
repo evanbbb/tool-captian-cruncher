@@ -20,12 +20,18 @@ const DEFAULT_STATE = {
     inputFile: "",
     outputSuffix: RUNTIME_TIMESTAMP_SUFFIX,
   },
-  gif: {
-    quality: 90,
-    fps: 15,
-    trimStart: 0,
-    trimEnd: "",
-    loop: true,
+  tools: {
+    ffmpeg: {
+      fps: 15,
+      trimStart: 0,
+      trimEnd: "",
+      extraFlags: "",
+    },
+    gifski: {
+      quality: 90,
+      loop: true,
+      extraFlags: "",
+    },
   },
   shell: {
     setE: true,
@@ -37,11 +43,13 @@ const DEFAULT_STATE = {
 const FIELD_BINDINGS = [
   { id: "inputFile", path: ["paths", "inputFile"], kind: "text" },
   { id: "outputSuffix", path: ["paths", "outputSuffix"], kind: "text" },
-  { id: "gifQuality", path: ["gif", "quality"], kind: "int" },
-  { id: "gifFps", path: ["gif", "fps"], kind: "int" },
-  { id: "gifTrimStart", path: ["gif", "trimStart"], kind: "floatOrEmpty" },
-  { id: "gifTrimEnd", path: ["gif", "trimEnd"], kind: "floatOrEmpty" },
-  { id: "gifLoop", path: ["gif", "loop"], kind: "checkbox" },
+  { id: "gifFps", path: ["tools", "ffmpeg", "fps"], kind: "int" },
+  { id: "gifTrimStart", path: ["tools", "ffmpeg", "trimStart"], kind: "floatOrEmpty" },
+  { id: "gifTrimEnd", path: ["tools", "ffmpeg", "trimEnd"], kind: "floatOrEmpty" },
+  { id: "ffmpegExtraFlags", path: ["tools", "ffmpeg", "extraFlags"], kind: "text" },
+  { id: "gifQuality", path: ["tools", "gifski", "quality"], kind: "int" },
+  { id: "gifLoop", path: ["tools", "gifski", "loop"], kind: "checkbox" },
+  { id: "gifskiExtraFlags", path: ["tools", "gifski", "extraFlags"], kind: "text" },
   { id: "shellSetE", path: ["shell", "setE"], kind: "checkbox" },
   { id: "shellCleanupTemp", path: ["shell", "cleanupTemp"], kind: "checkbox" },
   { id: "shellEchoDone", path: ["shell", "echoDone"], kind: "checkbox" },
@@ -220,8 +228,9 @@ function buildValidation(currentState, outputPath) {
   const normalizedInput = normalizeInputPath(currentState.paths.inputFile);
   const trimmedSuffix = currentState.paths.outputSuffix;
   const parsedInput = parseFilePath(normalizedInput);
-  const gifSettings = currentState.gif;
-  const trimStart = normalizedTrimStart(gifSettings);
+  const ffmpegSettings = currentState.tools.ffmpeg;
+  const gifskiSettings = currentState.tools.gifski;
+  const trimStart = normalizedTrimStart(ffmpegSettings);
 
   if (!normalizedInput) {
     errors.push("Input file path is required.");
@@ -235,12 +244,12 @@ function buildValidation(currentState, outputPath) {
     errors.push("Output suffix cannot contain path separators.");
   }
 
-  addIntegerRangeError(errors, "GIF quality", gifSettings.quality, 1, 100);
-  addIntegerRangeError(errors, "GIF fps", gifSettings.fps, 2, 30);
-  addMinimumError(errors, "Trim start", gifSettings.trimStart, 0);
-  addMinimumError(errors, "Trim end", gifSettings.trimEnd, 0);
+  addIntegerRangeError(errors, "gifski quality", gifskiSettings.quality, 1, 100);
+  addIntegerRangeError(errors, "ffmpeg fps", ffmpegSettings.fps, 2, 30);
+  addMinimumError(errors, "Trim start", ffmpegSettings.trimStart, 0);
+  addMinimumError(errors, "Trim end", ffmpegSettings.trimEnd, 0);
 
-  if (gifSettings.trimEnd !== "" && Number(gifSettings.trimEnd) <= trimStart) {
+  if (ffmpegSettings.trimEnd !== "" && Number(ffmpegSettings.trimEnd) <= trimStart) {
     errors.push("Trim end must be greater than trim start.");
   }
 
@@ -258,6 +267,10 @@ function buildValidation(currentState, outputPath) {
 
   if (!currentState.shell.cleanupTemp) {
     warnings.push("Cleanup temp files is disabled, so extracted PNG frames will remain in the temporary directory.");
+  }
+
+  if (ffmpegSettings.extraFlags.trim() || gifskiSettings.extraFlags.trim()) {
+    warnings.push("Extra flags are appended raw and may override structured controls.");
   }
 
   return { errors, warnings };
@@ -306,6 +319,10 @@ function buildFfmpegFlagParts(settings) {
   parts.push("-vf", `"${buildFfmpegFilter(settings)}"`);
   parts.push("-y");
 
+  if (settings.extraFlags.trim()) {
+    parts.push(settings.extraFlags.trim());
+  }
+
   return parts;
 }
 
@@ -324,6 +341,10 @@ function buildFfmpegActiveFlagParts(settings) {
   parts.push("-vf", `"${buildFfmpegFilter(settings)}"`);
   parts.push("-y");
 
+  if (settings.extraFlags.trim()) {
+    parts.push(settings.extraFlags.trim());
+  }
+
   return parts;
 }
 
@@ -331,23 +352,27 @@ function buildFfmpegCommand(settings, step) {
   return joinArgs(["ffmpeg", ...buildFfmpegFlagParts(settings), step.quotedOutputRef]);
 }
 
-function buildGifskiFlagParts(settings) {
+function buildGifskiFlagParts(currentState) {
+  const ffmpegSettings = currentState.tools.ffmpeg;
+  const gifskiSettings = currentState.tools.gifski;
+
   return [
     "--quality",
-    String(settings.quality),
+    String(gifskiSettings.quality),
     "--fps",
-    String(settings.fps),
+    String(ffmpegSettings.fps),
     "--width",
     "9999",
     "--repeat",
-    settings.loop ? "0" : "-1",
+    gifskiSettings.loop ? "0" : "-1",
+    gifskiSettings.extraFlags.trim(),
   ];
 }
 
-function buildGifskiCommand(settings, step) {
+function buildGifskiCommand(currentState, step) {
   return joinArgs([
     "gifski",
-    ...buildGifskiFlagParts(settings),
+    ...buildGifskiFlagParts(currentState),
     "--output",
     step.quotedOutputRef,
     step.quotedInputRef,
@@ -356,10 +381,10 @@ function buildGifskiCommand(settings, step) {
 
 function buildStepCommand(step, currentState) {
   if (step.toolName === "ffmpeg") {
-    return buildFfmpegCommand(currentState.gif, step);
+    return buildFfmpegCommand(currentState.tools.ffmpeg, step);
   }
 
-  return buildGifskiCommand(currentState.gif, step);
+  return buildGifskiCommand(currentState, step);
 }
 
 function buildRuntimeLines(currentState, context) {
@@ -423,8 +448,8 @@ function buildStepBreakdown(currentState, context) {
 function buildActiveFlags(currentState) {
   return TOOL_ORDER.map((toolName) => {
     const flags = toolName === "ffmpeg"
-      ? buildFfmpegActiveFlagParts(currentState.gif)
-      : buildGifskiFlagParts(currentState.gif);
+      ? buildFfmpegActiveFlagParts(currentState.tools.ffmpeg)
+      : buildGifskiFlagParts(currentState);
 
     return `${toolName}:\n${joinArgs(flags) || "(no flags)"}`;
   }).join("\n\n");
@@ -432,11 +457,11 @@ function buildActiveFlags(currentState) {
 
 function buildStats(currentState) {
   return {
-    qualityValue: String(currentState.gif.quality),
-    fpsValue: String(currentState.gif.fps),
-    fpsStat: `${currentState.gif.fps} fps`,
-    loopStat: currentState.gif.loop ? "Forever" : "No loop",
-    trimStat: buildTrimSummary(currentState.gif),
+    qualityValue: String(currentState.tools.gifski.quality),
+    fpsValue: String(currentState.tools.ffmpeg.fps),
+    fpsStat: `${currentState.tools.ffmpeg.fps} fps`,
+    loopStat: currentState.tools.gifski.loop ? "Forever" : "No loop",
+    trimStat: buildTrimSummary(currentState.tools.ffmpeg),
   };
 }
 
