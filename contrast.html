@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Captian Cruncher</title>
+    <link rel="icon" type="image/svg+xml" href="./favicon/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="96x96" href="./favicon/favicon-96x96.png" />
+    <link rel="icon" href="./favicon/favicon.ico" sizes="any" />
+    <link rel="apple-touch-icon" href="./favicon/apple-touch-icon.png" />
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-layout">
+      <nav class="sidebar">
+        <div class="sidebar-masthead">
+          <img class="sidebar-mascot" src="./favicon/cruncher.png" alt="Captain Cruncher mascot" />
+          <div class="sidebar-brand">Captain Cruncher</div>
+        </div>
+        <div class="sidebar-nav">
+          <a class="sidebar-link" href="./index.html">
+            <i class="ph ph-file-png"></i> PNG Builder
+          </a>
+          <a class="sidebar-link" href="./jpg.html">
+            <i class="ph ph-file-jpg"></i> JPEG Builder
+          </a>
+          <a class="sidebar-link" href="./gif.html">
+            <i class="ph ph-film-strip"></i> GIF Builder
+          </a>
+          <a class="sidebar-link active" href="./contrast.html">
+            <i class="ph ph-circle-half-tilt"></i> Contrast
+          </a>
+          <a class="sidebar-link sidebar-link-footer" href="./how-to.html">
+            <i class="ph ph-book-open"></i> How To
+          </a>
+        </div>
+      </nav>
+
+      <div class="canvas">
+        <main class="canvas-grid">
+          <section class="control-column">
+            <header class="hero panel">
+              <p class="eyebrow">Local Contrast Sampler</p>
+              <h1 class="typography-h1 hero-title">Contrast Accessibility</h1>
+              <p class="hero-copy typography-body-muted">
+                Drop in a local image, click one foreground point and one
+                background point, and compare WCAG contrast ratio with APCA. The
+                image is decoded and sampled locally in your browser only.
+              </p>
+              <div class="hero-pipeline">
+                <p class="pipeline-order">Upload → Pick Foreground → Pick Background → Review Scores</p>
+                <p class="section-note typography-body-muted">
+                  Samples use a 3×3 median RGB region from the clicked point so
+                  the score is less noisy than a single pixel read.
+                </p>
+              </div>
+              <p class="install-hint typography-caption">
+                Local only. This tool reads image pixels in-browser for sampling,
+                but nothing is uploaded or sent anywhere.
+              </p>
+            </header>
+
+            <section class="panel">
+              <div class="section-head">
+                <div>
+                  <p class="section-kicker">Image</p>
+                  <h2 class="typography-h2">Upload or Drop</h2>
+                </div>
+              </div>
+
+              <div
+                class="dropzone"
+                id="dropzone"
+              >
+                <div id="canvasEmpty" class="canvas-empty-state">
+                  <strong>Drop an image here</strong>
+                  <span class="dropzone-copy typography-body-muted">
+                    Or choose one from disk. PNG, JPEG, GIF, WebP, and other standard browser image formats work.
+                  </span>
+                </div>
+                <canvas id="imageCanvas" class="contrast-canvas" hidden></canvas>
+                <div class="dropzone-toolbar">
+                  <strong id="fileStatus" class="status-line">No image loaded yet.</strong>
+                  <div class="dropzone-actions">
+                    <button class="secondary-button dropzone-action" id="browseButton" type="button">
+                      Choose image
+                    </button>
+                    <button class="secondary-button dropzone-action" id="clearButton" type="button" hidden>
+                      Clear image
+                    </button>
+                  </div>
+                </div>
+                <input id="imageInput" type="file" accept="image/*" hidden />
+              </div>
+
+              <p class="guide-note typography-body-muted">
+                Drop another image onto this box or use <strong>Choose image</strong> to replace it. Loading a new image clears the previous foreground and background samples.
+              </p>
+            </section>
+
+            <section class="panel">
+              <div class="section-head">
+                <div>
+                  <p class="section-kicker">Sampling</p>
+                  <h2 class="typography-h2">Pick Colors</h2>
+                </div>
+              </div>
+
+              <div class="sample-toolbar">
+                <button class="secondary-button sample-mode-button" id="pickForegroundButton" type="button">
+                  Pick Foreground
+                </button>
+                <button class="secondary-button sample-mode-button" id="pickBackgroundButton" type="button">
+                  Pick Background
+                </button>
+              </div>
+
+              <p id="pickModeStatus" class="guide-note typography-body-muted">
+                Load an image, then choose which point to sample next.
+              </p>
+
+              <div class="sample-grid">
+                <div class="sample-card">
+                  <span class="field-label typography-label">Foreground sample</span>
+                  <div class="sample-chip-row">
+                    <span id="foregroundSwatch" class="sample-swatch empty" aria-hidden="true"></span>
+                    <div class="sample-meta">
+                      <strong id="foregroundValue" class="status-line">Waiting for sample</strong>
+                      <span id="foregroundLocation" class="field-note typography-caption">No point selected yet.</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="sample-card">
+                  <span class="field-label typography-label">Background sample</span>
+                  <div class="sample-chip-row">
+                    <span id="backgroundSwatch" class="sample-swatch empty" aria-hidden="true"></span>
+                    <div class="sample-meta">
+                      <strong id="backgroundValue" class="status-line">Waiting for sample</strong>
+                      <span id="backgroundLocation" class="field-note typography-caption">No point selected yet.</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+          </section>
+
+          <aside class="output-column">
+            <section class="panel output-panel">
+              <div class="output-head">
+                <div>
+                  <p class="section-kicker">Results</p>
+                  <h2 class="typography-h2">WCAG and APCA</h2>
+                </div>
+              </div>
+
+              <p id="resultsIntro" class="guide-note typography-body-muted">
+                Choose one foreground sample and one background sample to compute the accessibility scores.
+              </p>
+
+              <div id="resultsBlock" class="contrast-results" hidden>
+                <div class="stats-grid contrast-stats">
+                  <div class="stat-card">
+                    <span class="stat-card-label typography-caption">WCAG Ratio</span>
+                    <strong class="stat-card-value" id="wcagRatioValue">0.00 : 1</strong>
+                  </div>
+                  <div class="stat-card">
+                    <span class="stat-card-label typography-caption">APCA Lc</span>
+                    <strong class="stat-card-value" id="apcaValue">0</strong>
+                  </div>
+                  <div class="stat-card">
+                    <span class="stat-card-label typography-caption">APCA Strength</span>
+                    <strong class="stat-card-value" id="apcaStrength">Weak</strong>
+                  </div>
+                </div>
+
+                <div class="wcag-check-list">
+                  <div class="wcag-check-item">
+                    <div>
+                      <strong>Normal text</strong>
+                      <span>WCAG AA, 4.5:1 minimum</span>
+                    </div>
+                    <span class="wcag-badge" id="wcagNormalBadge">Fail</span>
+                  </div>
+                  <div class="wcag-check-item">
+                    <div>
+                      <strong>Large text</strong>
+                      <span>WCAG AA, 3:1 minimum</span>
+                    </div>
+                    <span class="wcag-badge" id="wcagLargeBadge">Fail</span>
+                  </div>
+                  <div class="wcag-check-item">
+                    <div>
+                      <strong>Graphical elements</strong>
+                      <span>WCAG UI/non-text, 3:1 minimum</span>
+                    </div>
+                    <span class="wcag-badge" id="wcagGraphicsBadge">Fail</span>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section class="panel output-panel">
+              <div class="output-head">
+                <div>
+                  <p class="section-kicker">Reference</p>
+                  <h2 class="typography-h2">How Scores Map</h2>
+                </div>
+              </div>
+              <ol class="guide-list typography-body-muted">
+                <li><strong>WCAG normal text</strong> passes at <code>4.5:1</code> or higher.</li>
+                <li><strong>WCAG large text</strong> and <strong>graphical elements</strong> pass at <code>3:1</code> or higher.</li>
+                <li><strong>APCA Strong</strong> starts at absolute <code>Lc 75</code>.</li>
+                <li><strong>APCA Moderate</strong> is absolute <code>Lc 45–74</code>.</li>
+                <li><strong>APCA Weak</strong> is absolute <code>Lc &lt; 45</code>.</li>
+              </ol>
+            </section>
+          </aside>
+        </main>
+      </div>
+    </div>
+
+    <script src="./contrast.js"></script>
+  </body>
+</html>
