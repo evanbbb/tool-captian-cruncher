@@ -99,17 +99,20 @@
 
                 <label class="field">
                   <span class="field-label typography-label">Output suffix</span>
-                  <input id="outputSuffix" type="text" spellcheck="false" />
+                  <select id="outputSuffixMode">
+                    <option value="timestamp">Timestamp</option>
+                    <option value="settings">Settings</option>
+                  </select>
                   <span class="field-note typography-caption">
-                    Defaults to the runtime shell expression <code>_$(date +%d%H%M%S)</code>.
+                    Timestamp keeps <code>_$(date +%d%H%M%S)</code>. Settings uses comparison tags like <code>_Q55-75_opt4</code>.
                   </span>
                 </label>
 
                 <div class="field output-preview">
-                  <span class="field-label typography-label">Derived output path</span>
+                  <span class="field-label typography-label">Derived output filename</span>
                   <code id="derivedOutput" class="derived-path">Waiting for input</code>
                   <span class="field-note typography-caption">
-                    This is the final destination used by the compiled command.
+                    This is the final filename used by the compiled command.
                   </span>
                 </div>
               </div>
@@ -140,11 +143,6 @@
                   <span class="field-label typography-label">Quality max</span>
                   <input id="pngquantQualityMax" type="number" min="0" max="100" />
                   <span class="field-note typography-caption">Upper bound target for the encoder.</span>
-                </label>
-                <label class="field">
-                  <span class="field-label typography-label">Speed</span>
-                  <input id="pngquantSpeed" type="number" min="1" max="11" />
-                  <span class="field-note typography-caption">1 is slower and usually smaller.</span>
                 </label>
                 <label class="field inline-toggle">
                   <input id="pngquantStrip" type="checkbox" />

@@ -100,14 +100,17 @@
 
                 <label class="field">
                   <span class="field-label typography-label">Output suffix</span>
-                  <input id="outputSuffix" type="text" spellcheck="false" />
+                  <select id="outputSuffixMode">
+                    <option value="timestamp">Timestamp</option>
+                    <option value="settings">Settings</option>
+                  </select>
                   <span class="field-note typography-caption">
-                    Defaults to the runtime shell expression <code>_$(date +%d%H%M%S)</code>.
+                    Timestamp keeps <code>_$(date +%d%H%M%S)</code>. Settings uses <code>_Q82</code> or <code>_LOSSLESS</code>.
                   </span>
                 </label>
 
                 <div class="field output-preview">
-                  <span class="field-label typography-label">Derived output path</span>
+                  <span class="field-label typography-label">Derived output filename</span>
                   <code id="derivedOutput" class="derived-path">Waiting for input</code>
                   <span class="field-note typography-caption">
                     Uses the same file extension as the source image.

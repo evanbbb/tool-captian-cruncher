@@ -1,5 +1,10 @@
 const TOOL_ORDER = ["ffmpeg", "gifski"];
 const RUNTIME_TIMESTAMP_SUFFIX = "_$(date +%d%H%M%S)";
+const GENERATED_SUFFIX_PATTERNS = [
+  /_\d{8}$/,
+  /_\$\(date \+%d%H%M%S\)$/,
+  /_Q\d+_M\d+_L\d+$/,
+];
 const VIDEO_EXTENSIONS = new Set([
   ".mp4",
   ".mov",
@@ -18,7 +23,7 @@ const VIDEO_EXTENSIONS = new Set([
 const DEFAULT_STATE = {
   paths: {
     inputFile: "",
-    outputSuffix: RUNTIME_TIMESTAMP_SUFFIX,
+    outputSuffixMode: "timestamp",
   },
   tools: {
     ffmpeg: {
@@ -42,7 +47,7 @@ const DEFAULT_STATE = {
 
 const FIELD_BINDINGS = [
   { id: "inputFile", path: ["paths", "inputFile"], kind: "text" },
-  { id: "outputSuffix", path: ["paths", "outputSuffix"], kind: "text" },
+  { id: "outputSuffixMode", path: ["paths", "outputSuffixMode"], kind: "text" },
   { id: "gifFps", path: ["tools", "ffmpeg", "fps"], kind: "int" },
   { id: "ffmpegExtraFlags", path: ["tools", "ffmpeg", "extraFlags"], kind: "text" },
   { id: "gifQuality", path: ["tools", "gifski", "quality"], kind: "int" },
@@ -130,13 +135,32 @@ function parseFilePath(inputPath) {
   };
 }
 
+function stripGeneratedSuffixes(stem) {
+  let nextStem = stem;
+  let changed = true;
+
+  while (changed && nextStem) {
+    changed = false;
+
+    GENERATED_SUFFIX_PATTERNS.forEach((pattern) => {
+      if (pattern.test(nextStem)) {
+        nextStem = nextStem.replace(pattern, "");
+        changed = true;
+      }
+    });
+  }
+
+  return nextStem || stem;
+}
+
 function deriveOutputPath(inputPath, suffix) {
   const parsed = parseFilePath(inputPath);
   if (!parsed) {
     return "";
   }
 
-  const outputName = `${parsed.stem}${suffix}.gif`;
+  const baseStem = stripGeneratedSuffixes(parsed.stem);
+  const outputName = `${baseStem}${suffix}.gif`;
   return parsed.directory ? `${parsed.directory}/${outputName}` : outputName;
 }
 
@@ -147,15 +171,32 @@ function buildOutputAssignmentLines(inputPath, suffix) {
   }
 
   if (suffix === RUNTIME_TIMESTAMP_SUFFIX) {
-    const outputBase = parsed.directory ? `${parsed.directory}/${parsed.stem}` : parsed.stem;
+    const baseStem = stripGeneratedSuffixes(parsed.stem);
+    const outputBase = parsed.directory ? `${parsed.directory}/${baseStem}` : baseStem;
     return [
       'STAMP="$(date +%d%H%M%S)"',
       `OUT_BASE=${shellQuote(outputBase)}`,
-      'OUT="${OUT_BASE}${STAMP}.gif"',
+      'OUT="${OUT_BASE}_${STAMP}.gif"',
     ];
   }
 
   return [`OUT=${shellQuote(deriveOutputPath(inputPath, suffix))}`];
+}
+
+function buildSettingsSuffix(currentState) {
+  return [
+    `Q${currentState.tools.gifski.quality}`,
+    `M${currentState.tools.gifski.motionQuality}`,
+    `L${currentState.tools.gifski.lossyQuality}`,
+  ].join("_").replace(/^/, "_");
+}
+
+function resolveOutputSuffix(currentState) {
+  if (currentState.paths.outputSuffixMode === "settings") {
+    return buildSettingsSuffix(currentState);
+  }
+
+  return RUNTIME_TIMESTAMP_SUFFIX;
 }
 
 function shellQuote(value) {
@@ -185,21 +226,12 @@ function buildValidation(currentState, outputPath) {
   const errors = [];
   const warnings = [];
   const normalizedInput = normalizeInputPath(currentState.paths.inputFile);
-  const trimmedSuffix = currentState.paths.outputSuffix;
   const parsedInput = parseFilePath(normalizedInput);
   const ffmpegSettings = currentState.tools.ffmpeg;
   const gifskiSettings = currentState.tools.gifski;
 
   if (!normalizedInput) {
     errors.push("Input file path is required.");
-  }
-
-  if (!trimmedSuffix) {
-    errors.push("Output suffix cannot be empty.");
-  }
-
-  if (trimmedSuffix.includes("/")) {
-    errors.push("Output suffix cannot contain path separators.");
   }
 
   addIntegerRangeError(errors, "gifski quality", gifskiSettings.quality, 1, 100);
@@ -334,7 +366,7 @@ function buildRuntimeLines(currentState, context) {
   }
 
   lines.push(`IN=${shellQuote(normalizeInputPath(currentState.paths.inputFile))}`);
-  buildOutputAssignmentLines(currentState.paths.inputFile, currentState.paths.outputSuffix).forEach((line) => {
+  buildOutputAssignmentLines(currentState.paths.inputFile, resolveOutputSuffix(currentState)).forEach((line) => {
     lines.push(line);
   });
   lines.push('TMP_DIR="$(mktemp -d -t gifpipe.XXXXXX)"');
@@ -405,7 +437,10 @@ function buildStats(currentState) {
 }
 
 function buildArtifacts(currentState) {
-  const outputPath = deriveOutputPath(currentState.paths.inputFile, currentState.paths.outputSuffix);
+  const outputPath = deriveOutputPath(
+    currentState.paths.inputFile,
+    resolveOutputSuffix(currentState)
+  );
   const validation = buildValidation(currentState, outputPath);
   const stats = buildStats(currentState);
 
@@ -507,7 +542,9 @@ function renderValidation(validation) {
 function renderOutputs() {
   const artifacts = buildArtifacts(state);
 
-  dom.derivedOutput.textContent = artifacts.outputPath || "Waiting for input";
+  dom.derivedOutput.textContent = artifacts.outputPath
+    ? artifacts.outputPath.split(/[\\/]/).pop() || artifacts.outputPath
+    : "Waiting for input";
   dom.oneLineOutput.textContent = artifacts.oneLineOutput;
   dom.stepBreakdown.textContent = artifacts.stepBreakdown;
   dom.activeFlags.textContent = artifacts.activeFlags;

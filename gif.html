@@ -130,14 +130,17 @@
 
                 <label class="field">
                   <span class="field-label typography-label">Output suffix</span>
-                  <input id="outputSuffix" type="text" spellcheck="false" />
+                  <select id="outputSuffixMode">
+                    <option value="timestamp">Timestamp</option>
+                    <option value="settings">Settings</option>
+                  </select>
                   <span class="field-note typography-caption">
-                    Defaults to the runtime shell expression <code>_$(date +%d%H%M%S)</code>.
+                    Timestamp keeps <code>_$(date +%d%H%M%S)</code>. Settings uses comparison tags like <code>_Q90_M80_L60</code>.
                   </span>
                 </label>
 
                 <div class="field output-preview">
-                  <span class="field-label typography-label">Derived output path</span>
+                  <span class="field-label typography-label">Derived output filename</span>
                   <code id="derivedOutput" class="derived-path">Waiting for input</code>
                   <span class="field-note typography-caption">
                     Output is always written as <code>.gif</code>.

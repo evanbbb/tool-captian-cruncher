@@ -1,12 +1,19 @@
 const TOOL_ORDER = ["jpegoptim", "jpegtran"];
 const RUNTIME_TIMESTAMP_SUFFIX = "_$(date +%d%H%M%S)";
+const GENERATED_SUFFIX_PATTERNS = [
+  /_\d{8}$/,
+  /_\$\(date \+%d%H%M%S\)$/,
+  /_Q\d+$/,
+  /_LOSSLESS$/,
+  /_SETTINGS$/,
+];
 
 const PRESETS = {
   balanced: {
     presetBase: "balanced",
     paths: {
       inputFile: "",
-      outputSuffix: RUNTIME_TIMESTAMP_SUFFIX,
+      outputSuffixMode: "timestamp",
     },
     shell: {
       setE: true,
@@ -41,7 +48,7 @@ const PRESETS = {
     presetBase: "small",
     paths: {
       inputFile: "",
-      outputSuffix: RUNTIME_TIMESTAMP_SUFFIX,
+      outputSuffixMode: "timestamp",
     },
     shell: {
       setE: true,
@@ -76,7 +83,7 @@ const PRESETS = {
     presetBase: "tiny",
     paths: {
       inputFile: "",
-      outputSuffix: RUNTIME_TIMESTAMP_SUFFIX,
+      outputSuffixMode: "timestamp",
     },
     shell: {
       setE: true,
@@ -111,7 +118,7 @@ const PRESETS = {
     presetBase: "lossless",
     paths: {
       inputFile: "",
-      outputSuffix: RUNTIME_TIMESTAMP_SUFFIX,
+      outputSuffixMode: "timestamp",
     },
     shell: {
       setE: true,
@@ -146,7 +153,7 @@ const PRESETS = {
 
 const FIELD_BINDINGS = [
   { id: "inputFile", path: ["paths", "inputFile"], kind: "text" },
-  { id: "outputSuffix", path: ["paths", "outputSuffix"], kind: "text" },
+  { id: "outputSuffixMode", path: ["paths", "outputSuffixMode"], kind: "text" },
   { id: "jpegoptimEnabled", path: ["tools", "jpegoptim", "enabled"], kind: "checkbox" },
   { id: "jpegoptimMaxQuality", path: ["tools", "jpegoptim", "maxQuality"], kind: "intOrEmpty" },
   { id: "jpegoptimThreshold", path: ["tools", "jpegoptim", "threshold"], kind: "intOrEmpty" },
@@ -241,6 +248,24 @@ function parseFilePath(inputPath) {
   };
 }
 
+function stripGeneratedSuffixes(stem) {
+  let nextStem = stem;
+  let changed = true;
+
+  while (changed && nextStem) {
+    changed = false;
+
+    GENERATED_SUFFIX_PATTERNS.forEach((pattern) => {
+      if (pattern.test(nextStem)) {
+        nextStem = nextStem.replace(pattern, "");
+        changed = true;
+      }
+    });
+  }
+
+  return nextStem || stem;
+}
+
 function defaultJpegExtension(parsedPath) {
   if (!parsedPath || !parsedPath.extension) {
     return ".jpg";
@@ -260,7 +285,8 @@ function deriveOutputPath(inputPath, suffix) {
   }
 
   const extension = defaultJpegExtension(parsed);
-  const outputName = `${parsed.stem}${suffix}${extension}`;
+  const baseStem = stripGeneratedSuffixes(parsed.stem);
+  const outputName = `${baseStem}${suffix}${extension}`;
   return parsed.directory ? `${parsed.directory}/${outputName}` : outputName;
 }
 
@@ -273,15 +299,43 @@ function buildOutputAssignmentLines(inputPath, suffix) {
   const extension = defaultJpegExtension(parsed);
 
   if (suffix === RUNTIME_TIMESTAMP_SUFFIX) {
-    const outputBase = parsed.directory ? `${parsed.directory}/${parsed.stem}` : parsed.stem;
+    const baseStem = stripGeneratedSuffixes(parsed.stem);
+    const outputBase = parsed.directory ? `${parsed.directory}/${baseStem}` : baseStem;
     return [
       'STAMP="$(date +%d%H%M%S)"',
       `OUT_BASE=${shellQuote(outputBase)}`,
-      `OUT="\${OUT_BASE}\${STAMP}${extension}"`,
+      `OUT="\${OUT_BASE}_\${STAMP}${extension}"`,
     ];
   }
 
   return [`OUT=${shellQuote(deriveOutputPath(inputPath, suffix))}`];
+}
+
+function joinSettingsSuffix(tokens) {
+  const activeTokens = tokens.filter(Boolean);
+  return activeTokens.length > 0 ? `_${activeTokens.join("_")}` : "_SETTINGS";
+}
+
+function buildSettingsSuffix(currentState) {
+  const jpegoptimSettings = currentState.tools.jpegoptim;
+
+  if (!jpegoptimSettings.enabled) {
+    return "_SETTINGS";
+  }
+
+  if (jpegoptimSettings.maxQuality !== "") {
+    return joinSettingsSuffix([`Q${jpegoptimSettings.maxQuality}`]);
+  }
+
+  return "_LOSSLESS";
+}
+
+function resolveOutputSuffix(currentState) {
+  if (currentState.paths.outputSuffixMode === "settings") {
+    return buildSettingsSuffix(currentState);
+  }
+
+  return RUNTIME_TIMESTAMP_SUFFIX;
 }
 
 function shellQuote(value) {
@@ -311,7 +365,6 @@ function buildValidation(currentState, outputPath) {
   const errors = [];
   const warnings = [];
   const normalizedInput = normalizeInputPath(currentState.paths.inputFile);
-  const trimmedSuffix = currentState.paths.outputSuffix;
   const parsedInput = parseFilePath(normalizedInput);
   const activeTools = enabledTools(currentState);
   const jpegoptimSettings = currentState.tools.jpegoptim;
@@ -319,14 +372,6 @@ function buildValidation(currentState, outputPath) {
 
   if (!normalizedInput) {
     errors.push("Input file path is required.");
-  }
-
-  if (!trimmedSuffix) {
-    errors.push("Output suffix cannot be empty.");
-  }
-
-  if (trimmedSuffix.includes("/")) {
-    errors.push("Output suffix cannot contain path separators.");
   }
 
   if (activeTools.length === 0) {
@@ -514,7 +559,7 @@ function buildRuntimeLines(currentState, context) {
   }
 
   lines.push(`IN=${shellQuote(normalizeInputPath(currentState.paths.inputFile))}`);
-  buildOutputAssignmentLines(currentState.paths.inputFile, currentState.paths.outputSuffix).forEach((line) => {
+  buildOutputAssignmentLines(currentState.paths.inputFile, resolveOutputSuffix(currentState)).forEach((line) => {
     lines.push(line);
   });
 
@@ -602,7 +647,10 @@ function buildActiveFlags(currentState, context) {
 }
 
 function buildArtifacts(currentState) {
-  const outputPath = deriveOutputPath(currentState.paths.inputFile, currentState.paths.outputSuffix);
+  const outputPath = deriveOutputPath(
+    currentState.paths.inputFile,
+    resolveOutputSuffix(currentState)
+  );
   const validation = buildValidation(currentState, outputPath);
 
   if (validation.errors.length > 0) {
@@ -702,7 +750,9 @@ function renderValidation(validation) {
 function renderOutputs() {
   const artifacts = buildArtifacts(state);
 
-  dom.derivedOutput.textContent = artifacts.outputPath || "Waiting for input";
+  dom.derivedOutput.textContent = artifacts.outputPath
+    ? artifacts.outputPath.split(/[\\/]/).pop() || artifacts.outputPath
+    : "Waiting for input";
   dom.oneLineOutput.textContent = artifacts.oneLineOutput;
   dom.stepBreakdown.textContent = artifacts.stepBreakdown;
   dom.activeFlags.textContent = artifacts.activeFlags;
@@ -721,8 +771,10 @@ function render() {
 
 function loadPreset(name) {
   const preservedInput = state.paths.inputFile;
+  const preservedOutputSuffixMode = state.paths.outputSuffixMode;
   state = createStateFromPreset(name);
   state.paths.inputFile = preservedInput;
+  state.paths.outputSuffixMode = preservedOutputSuffixMode;
   render();
 }
 
