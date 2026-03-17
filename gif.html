@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Captian Cruncher</title>
+    <link rel="icon" type="image/svg+xml" href="./favicon/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="96x96" href="./favicon/favicon-96x96.png" />
+    <link rel="icon" href="./favicon/favicon.ico" sizes="any" />
+    <link rel="apple-touch-icon" href="./favicon/apple-touch-icon.png" />
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-layout">
+      <nav class="sidebar">
+        <div class="sidebar-masthead">
+          <img class="sidebar-mascot" src="./favicon/cruncher.png" alt="Captain Cruncher mascot" />
+          <div class="sidebar-brand">Captain Cruncher</div>
+        </div>
+        <div class="sidebar-nav">
+          <a class="sidebar-link" href="./index.html">
+            <i class="ph ph-file-png"></i> PNG Builder
+          </a>
+          <a class="sidebar-link" href="./jpg.html">
+            <i class="ph ph-file-jpg"></i> JPEG Builder
+          </a>
+          <a class="sidebar-link active" href="./gif.html">
+            <i class="ph ph-file-gif"></i> GIF Builder
+          </a>
+        </div>
+      </nav>
+
+      <div class="canvas">
+        <main class="canvas-grid">
+          <section class="control-column">
+            <header class="hero panel">
+              <p class="eyebrow">Local Command Compiler</p>
+              <h1 class="typography-h1 hero-title">GIF Builder</h1>
+              <p class="hero-copy typography-body-muted">
+                Paste one video file path, tune the GIF export, and copy the
+                exact Terminal command. The browser never opens or uploads the
+                file.
+              </p>
+              <div class="hero-pipeline">
+                <p class="pipeline-order">ffmpeg → gifski</p>
+                <p class="section-note typography-body-muted">
+                  FFmpeg extracts the frames first, then gifski assembles the
+                  final GIF. The source video stays untouched.
+                </p>
+              </div>
+              <p class="install-hint typography-caption">
+                Install separately: <code>brew install ffmpeg gifski</code>
+              </p>
+            </header>
+
+            <section class="panel">
+              <div class="section-head">
+                <p class="section-kicker">Path</p>
+              </div>
+
+              <div class="field-grid">
+                <label class="field field-span">
+                  <span class="field-label typography-label">Input file path</span>
+                  <input
+                    id="inputFile"
+                    type="text"
+                    spellcheck="false"
+                    placeholder="/Users/you/Desktop/source.mov"
+                  />
+                  <span class="field-note typography-caption">
+                    Text only. The app does not read the file, but this page
+                    expects a video path.
+                  </span>
+                </label>
+
+                <label class="field">
+                  <span class="field-label typography-label">Output suffix</span>
+                  <input id="outputSuffix" type="text" spellcheck="false" />
+                  <span class="field-note typography-caption">
+                    Defaults to the runtime shell expression <code>_$(date +%d%H%M%S)</code>.
+                  </span>
+                </label>
+
+                <div class="field output-preview">
+                  <span class="field-label typography-label">Derived output path</span>
+                  <code id="derivedOutput" class="derived-path">Waiting for input</code>
+                  <span class="field-note typography-caption">
+                    Output is always written as <code>.gif</code>.
+                  </span>
+                </div>
+              </div>
+            </section>
+
+            <section class="panel tool-panel">
+              <div class="section-head">
+                <div>
+                  <p class="section-kicker">GIF</p>
+                  <h2 class="typography-h2">Encoding Controls</h2>
+                </div>
+              </div>
+              <p class="section-note typography-body-muted">
+                Quality and fps control the final animation. Trim values are
+                passed directly to ffmpeg before frame extraction.
+              </p>
+
+              <div class="field-grid">
+                <label class="field slider-field">
+                  <span class="slider-head">
+                    <span class="field-label typography-label">Quality</span>
+                    <span class="slider-readout">
+                      <strong id="gifQualityValue">90</strong>
+                      <span class="unit">/100</span>
+                    </span>
+                  </span>
+                  <input id="gifQuality" type="range" min="1" max="100" step="1" />
+                  <span class="field-note typography-caption">
+                    Lower quality is usually smaller.
+                  </span>
+                </label>
+
+                <label class="field slider-field">
+                  <span class="slider-head">
+                    <span class="field-label typography-label">FPS</span>
+                    <span class="slider-readout">
+                      <strong id="gifFpsValue">15</strong>
+                      <span class="unit">fps</span>
+                    </span>
+                  </span>
+                  <input id="gifFps" type="range" min="2" max="30" step="1" />
+                  <span class="field-note typography-caption">
+                    Higher fps looks smoother but can get heavy fast.
+                  </span>
+                </label>
+
+                <label class="field">
+                  <span class="field-label typography-label">Trim start</span>
+                  <input id="gifTrimStart" type="number" min="0" step="0.1" />
+                  <span class="field-note typography-caption">
+                    Optional. Seconds from the start of the source file.
+                  </span>
+                </label>
+
+                <label class="field">
+                  <span class="field-label typography-label">Trim end</span>
+                  <input id="gifTrimEnd" type="number" min="0" step="0.1" placeholder="Optional" />
+                  <span class="field-note typography-caption">
+                    Optional. Must be greater than trim start when set.
+                  </span>
+                </label>
+
+                <label class="field inline-toggle field-span">
+                  <input id="gifLoop" type="checkbox" />
+                  <span>
+                    <strong>Loop forever</strong>
+                    <small>Uses gifski repeat mode for an infinite loop.</small>
+                  </span>
+                </label>
+              </div>
+
+              <div class="stats-grid">
+                <div class="stat-card">
+                  <span class="stat-card-label typography-caption">GIF FPS</span>
+                  <strong class="stat-card-value" id="gifFpsStat">15 fps</strong>
+                </div>
+                <div class="stat-card">
+                  <span class="stat-card-label typography-caption">Loop</span>
+                  <strong class="stat-card-value" id="gifLoopStat">Forever</strong>
+                </div>
+                <div class="stat-card">
+                  <span class="stat-card-label typography-caption">Trim</span>
+                  <strong class="stat-card-value" id="gifTrimStat">Full source</strong>
+                </div>
+              </div>
+            </section>
+
+            <section class="panel">
+              <div class="section-head">
+                <div>
+                  <p class="section-kicker">Shell</p>
+                  <h2 class="typography-h2">Runtime Behavior</h2>
+                </div>
+              </div>
+              <div class="field-grid compact-grid">
+                <label class="field inline-toggle">
+                  <input id="shellSetE" type="checkbox" />
+                  <span>
+                    <strong>set -e</strong>
+                    <small>Stop on the first failing command.</small>
+                  </span>
+                </label>
+                <label class="field inline-toggle">
+                  <input id="shellCleanupTemp" type="checkbox" />
+                  <span>
+                    <strong>Cleanup temp files</strong>
+                    <small>Remove extracted frames when the script exits.</small>
+                  </span>
+                </label>
+                <label class="field inline-toggle">
+                  <input id="shellEchoDone" type="checkbox" />
+                  <span>
+                    <strong>Echo completion</strong>
+                    <small>Print the final GIF output path.</small>
+                  </span>
+                </label>
+              </div>
+            </section>
+
+            <section class="panel">
+              <div class="section-head">
+                <div>
+                  <p class="section-kicker">Validation</p>
+                  <h2 class="typography-h2">Warnings and Blocks</h2>
+                </div>
+              </div>
+              <div id="validationSummary" class="validation-stack"></div>
+            </section>
+          </section>
+
+          <aside class="output-column">
+            <section class="panel output-panel">
+              <div class="output-head">
+                <div>
+                  <p class="section-kicker">Compiled Output</p>
+                  <h2 class="typography-h2">One-Line Command</h2>
+                </div>
+                <button class="copy-button" id="copyOneLineButton" type="button">
+                  Copy one-line
+                </button>
+              </div>
+              <pre><code id="oneLineOutput"></code></pre>
+            </section>
+
+            <section class="panel output-panel">
+              <div class="output-head">
+                <div>
+                  <p class="section-kicker">Compiled Output</p>
+                  <h2 class="typography-h2">Step Breakdown</h2>
+                </div>
+                <button class="copy-button" id="copyBreakdownButton" type="button">
+                  Copy breakdown
+                </button>
+              </div>
+              <pre><code id="stepBreakdown"></code></pre>
+            </section>
+
+            <section class="panel output-panel">
+              <div class="output-head">
+                <div>
+                  <p class="section-kicker">Compiled Output</p>
+                  <h2 class="typography-h2">Active Flags</h2>
+                </div>
+                <button class="copy-button" id="copyFlagsButton" type="button">
+                  Copy flags
+                </button>
+              </div>
+              <pre><code id="activeFlags"></code></pre>
+            </section>
+          </aside>
+        </main>
+      </div>
+    </div>
+
+    <script src="./gif.js"></script>
+  </body>
+</html>

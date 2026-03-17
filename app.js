@@ -1,5 +1,5 @@
 const TOOL_ORDER = ["pngquant", "oxipng", "zopflipng"];
-const RUNTIME_TIMESTAMP_SUFFIX = "$(date +%d%H%M%S)";
+const RUNTIME_TIMESTAMP_SUFFIX = "_$(date +%d%H%M%S)";
 
 const PRESETS = {
   balanced: {
@@ -30,7 +30,7 @@ const PRESETS = {
       oxipng: {
         enabled: true,
         level: 4,
-        stripMode: "safe",
+        stripMode: "all",
         alpha: false,
         interlace: "off",
         fix: false,
@@ -174,7 +174,7 @@ const PRESETS = {
       oxipng: {
         enabled: true,
         level: 6,
-        stripMode: "safe",
+        stripMode: "all",
         alpha: false,
         interlace: "off",
         fix: false,
@@ -234,15 +234,12 @@ const FIELD_BINDINGS = [
 
 const dom = {
   presetSelect: document.getElementById("presetSelect"),
-  presetStatus: document.getElementById("presetStatus"),
   resetPresetButton: document.getElementById("resetPresetButton"),
   derivedOutput: document.getElementById("derivedOutput"),
   validationSummary: document.getElementById("validationSummary"),
-  scriptBlock: document.getElementById("scriptBlock"),
   oneLineOutput: document.getElementById("oneLineOutput"),
   stepBreakdown: document.getElementById("stepBreakdown"),
   activeFlags: document.getElementById("activeFlags"),
-  copyScriptButton: document.getElementById("copyScriptButton"),
   copyOneLineButton: document.getElementById("copyOneLineButton"),
   copyBreakdownButton: document.getElementById("copyBreakdownButton"),
   copyFlagsButton: document.getElementById("copyFlagsButton"),
@@ -271,7 +268,18 @@ function setAtPath(root, path, value) {
 }
 
 function normalizeInputPath(inputPath) {
-  return inputPath.trim();
+  const trimmed = inputPath.trim();
+  if (trimmed.length < 2) {
+    return trimmed;
+  }
+
+  const firstCharacter = trimmed[0];
+  const lastCharacter = trimmed[trimmed.length - 1];
+  if ((firstCharacter === '"' || firstCharacter === "'") && firstCharacter === lastCharacter) {
+    return trimmed.slice(1, -1);
+  }
+
+  return trimmed;
 }
 
 function parseFilePath(inputPath) {
@@ -326,31 +334,6 @@ function buildOutputAssignmentLines(inputPath, suffix) {
 
 function shellQuote(value) {
   return `'${String(value).replace(/'/g, `'\"'\"'`)}'`;
-}
-
-function displayNameForPreset(name) {
-  if (name === "lossless") {
-    return "Lossless only";
-  }
-  return name.charAt(0).toUpperCase() + name.slice(1);
-}
-
-function comparableState(currentState) {
-  return {
-    paths: {
-      outputSuffix: currentState.paths.outputSuffix,
-    },
-    shell: currentState.shell,
-    tools: currentState.tools,
-  };
-}
-
-function comparablePresetState(currentState) {
-  return comparableState(PRESETS[currentState.presetBase]);
-}
-
-function isCustomState(currentState) {
-  return JSON.stringify(comparableState(currentState)) !== JSON.stringify(comparablePresetState(currentState));
 }
 
 function enabledTools(currentState) {
@@ -458,7 +441,7 @@ function buildValidation(currentState, outputPath) {
     addIntegerRangeError(errors, "pngquant quality max", pngSettings.qualityMax, 0, 100);
     addIntegerRangeError(errors, "pngquant speed", pngSettings.speed, 1, 11);
     addRangeError(errors, "pngquant floyd amount", pngSettings.floyd, 0, 1);
-    addIntegerRangeError(errors, "pngquant posterize", pngSettings.posterize, 1, 8);
+    addIntegerRangeError(errors, "pngquant posterize", pngSettings.posterize, 0, 4);
   }
 
   if (oxiSettings.enabled) {
@@ -830,7 +813,6 @@ function buildArtifacts(currentState) {
     return {
       outputPath,
       validation,
-      scriptBlock: "Resolve the blocking issues on the left to generate a command.",
       oneLineOutput: "Resolve the blocking issues on the left to generate a command.",
       stepBreakdown: "Resolve the blocking issues on the left to inspect the pipeline.",
       activeFlags: "Resolve the blocking issues on the left to inspect active flags.",
@@ -840,7 +822,6 @@ function buildArtifacts(currentState) {
 
   const context = buildRuntimeContext(currentState, outputPath);
   const runtimeLines = buildRuntimeLines(currentState, context);
-  const scriptBlock = runtimeLines.join("\n");
   const oneLineOutput = buildOneLineOutput(runtimeLines);
   const stepBreakdown = buildStepBreakdown(currentState, context);
   const activeFlags = buildActiveFlags(currentState, context);
@@ -848,7 +829,6 @@ function buildArtifacts(currentState) {
   return {
     outputPath,
     validation,
-    scriptBlock,
     oneLineOutput,
     stepBreakdown,
     activeFlags,
@@ -876,13 +856,6 @@ function parseFieldValue(element, binding) {
   return element.value;
 }
 
-function updatePresetStatus() {
-  const custom = isCustomState(state);
-  const baseName = displayNameForPreset(state.presetBase);
-  dom.presetStatus.textContent = custom ? `Custom (from ${baseName})` : `Preset: ${baseName}`;
-  dom.presetSelect.value = state.presetBase;
-}
-
 function renderForm() {
   FIELD_BINDINGS.forEach((binding) => {
     const element = document.getElementById(binding.id);
@@ -896,7 +869,7 @@ function renderForm() {
     element.value = value === "" ? "" : String(value);
   });
 
-  updatePresetStatus();
+  dom.presetSelect.value = state.presetBase;
 }
 
 function renderValidation(validation) {
@@ -942,12 +915,10 @@ function renderOutputs() {
   const artifacts = buildArtifacts(state);
 
   dom.derivedOutput.textContent = artifacts.outputPath || "Waiting for input";
-  dom.scriptBlock.textContent = artifacts.scriptBlock;
   dom.oneLineOutput.textContent = artifacts.oneLineOutput;
   dom.stepBreakdown.textContent = artifacts.stepBreakdown;
   dom.activeFlags.textContent = artifacts.activeFlags;
 
-  dom.copyScriptButton.disabled = !artifacts.canCopy;
   dom.copyOneLineButton.disabled = !artifacts.canCopy;
   dom.copyBreakdownButton.disabled = !artifacts.canCopy;
   dom.copyFlagsButton.disabled = !artifacts.canCopy;
@@ -1008,10 +979,6 @@ function bindFields() {
 
   dom.resetPresetButton.addEventListener("click", () => {
     loadPreset(state.presetBase);
-  });
-
-  dom.copyScriptButton.addEventListener("click", () => {
-    copyText(dom.scriptBlock.textContent, dom.copyScriptButton);
   });
 
   dom.copyOneLineButton.addEventListener("click", () => {

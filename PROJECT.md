@@ -6,12 +6,13 @@ A static, client-side web tool that compiles optimized shell commands for image 
 
 ## Architecture
 
-Pure static HTML/CSS/JS — no framework, no build step, no server. Each image format has its own page and script:
+Pure static HTML/CSS/JS — no framework, no build step, no server. Each tool has its own page and script:
 
 | Format | Page         | Script  | Tools                          |
 |--------|------------- |---------|--------------------------------|
 | PNG    | `index.html` | `app.js`| pngquant, oxipng, zopflipng    |
 | JPEG   | `jpg.html`   | `jpg.js`| jpegoptim, jpegtran            |
+| GIF    | `gif.html`   | `gif.js`| ffmpeg, gifski                 |
 
 Shared styling lives in `styles.css`.
 

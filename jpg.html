@@ -3,7 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>JPEG Pipeline Builder</title>
+    <title>Captian Cruncher</title>
+    <link rel="icon" type="image/svg+xml" href="./favicon/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="96x96" href="./favicon/favicon-96x96.png" />
+    <link rel="icon" href="./favicon/favicon.ico" sizes="any" />
+    <link rel="apple-touch-icon" href="./favicon/apple-touch-icon.png" />
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link rel="stylesheet" href="./styles.css" />
@@ -11,7 +15,10 @@
   <body>
     <div class="app-layout">
       <nav class="sidebar">
-        <div class="sidebar-brand">Captain Cruncher</div>
+        <div class="sidebar-masthead">
+          <img class="sidebar-mascot" src="./favicon/cruncher.png" alt="Captain Cruncher mascot" />
+          <div class="sidebar-brand">Captain Cruncher</div>
+        </div>
         <div class="sidebar-nav">
           <a class="sidebar-link" href="./index.html">
             <i class="ph ph-file-png"></i> PNG Builder
@@ -19,10 +26,8 @@
           <a class="sidebar-link active" href="./jpg.html">
             <i class="ph ph-file-jpg"></i> JPEG Builder
           </a>
-        </div>
-        <div class="sidebar-footer">
-          <a class="sidebar-settings" href="#">
-            <i class="ph ph-gear"></i> Settings
+          <a class="sidebar-link" href="./gif.html">
+            <i class="ph ph-file-gif"></i> GIF Builder
           </a>
         </div>
       </nav>
@@ -32,15 +37,18 @@
           <section class="control-column">
             <header class="hero panel">
               <p class="eyebrow">Local Command Compiler</p>
-              <h1 class="typography-h1">JPEG Pipeline Builder</h1>
+              <h1 class="typography-h1 hero-title">JPEG Pipeline Builder</h1>
               <p class="hero-copy typography-body-muted">
                 Paste one JPG or JPEG file path, tune the optimizer chain, and
                 copy the exact Terminal command. The browser never opens or uploads
                 the file.
               </p>
-              <div class="hero-meta">
-                <span class="meta-chip">jpegoptim</span>
-                <span class="meta-chip">jpegtran</span>
+              <div class="hero-pipeline">
+                <p class="pipeline-order">jpegoptim → jpegtran</p>
+                <p class="section-note typography-body-muted">
+                  The order is fixed so the lossy or lossless recompression happens
+                  first, followed by an optional lossless rewrite pass.
+                </p>
               </div>
               <p class="install-hint typography-caption">
                 Install separately: <code>brew install jpegoptim jpeg-turbo</code>
@@ -49,38 +57,25 @@
 
             <section class="panel">
               <div class="section-head">
-                <div>
-                  <p class="section-kicker">Preset</p>
-                  <h2 class="typography-h2">Base Configuration</h2>
-                </div>
-                <span class="state-pill" id="presetStatus">Preset: Balanced</span>
+                <p class="section-kicker">Preset</p>
               </div>
 
-              <div class="field-grid compact-grid">
-                <label class="field">
-                  <span class="field-label typography-label">Preset</span>
-                  <select id="presetSelect">
-                    <option value="balanced">Balanced</option>
-                    <option value="small">Small</option>
-                    <option value="tiny">Tiny</option>
-                    <option value="lossless">Lossless only</option>
-                  </select>
-                </label>
-                <div class="field action-field">
-                  <span class="field-label typography-label">Reset</span>
-                  <button class="secondary-button" id="resetPresetButton" type="button">
-                    Reload preset
-                  </button>
-                </div>
+              <div class="preset-controls">
+                <select id="presetSelect" aria-label="Preset">
+                  <option value="balanced">Balanced</option>
+                  <option value="small">Small</option>
+                  <option value="tiny">Tiny</option>
+                  <option value="lossless">Lossless only</option>
+                </select>
+                <button class="secondary-button" id="resetPresetButton" type="button">
+                  reload
+                </button>
               </div>
             </section>
 
             <section class="panel">
               <div class="section-head">
-                <div>
-                  <p class="section-kicker">Paths</p>
-                  <h2 class="typography-h2">Single File</h2>
-                </div>
+                <p class="section-kicker">Path</p>
               </div>
 
               <div class="field-grid">
@@ -101,7 +96,7 @@
                   <span class="field-label typography-label">Output suffix</span>
                   <input id="outputSuffix" type="text" spellcheck="false" />
                   <span class="field-note typography-caption">
-                    Defaults to the runtime shell expression <code>$(date +%d%H%M%S)</code>.
+                    Defaults to the runtime shell expression <code>_$(date +%d%H%M%S)</code>.
                   </span>
                 </label>
 
@@ -113,20 +108,6 @@
                   </span>
                 </div>
               </div>
-            </section>
-
-            <section class="panel">
-              <div class="section-head">
-                <div>
-                  <p class="section-kicker">Pipeline</p>
-                  <h2 class="typography-h2">Fixed Order</h2>
-                </div>
-              </div>
-              <p class="pipeline-order">jpegoptim → jpegtran</p>
-              <p class="section-note typography-body-muted">
-                The order is fixed so the lossy or lossless recompression happens
-                first, followed by an optional lossless rewrite pass.
-              </p>
             </section>
 
             <section class="panel tool-panel">
@@ -186,8 +167,8 @@
                 <label class="field">
                   <span class="field-label typography-label">Metadata mode</span>
                   <select id="jpegoptimMetadataMode">
+                    <option value="strip-all" selected>Strip all markers</option>
                     <option value="default">Default common markers</option>
-                    <option value="strip-all">Strip all markers</option>
                     <option value="keep-all">Keep all markers</option>
                   </select>
                   <span class="field-note typography-caption">
@@ -352,19 +333,6 @@
           </section>
 
           <aside class="output-column">
-            <section class="panel output-panel">
-              <div class="output-head">
-                <div>
-                  <p class="section-kicker">Compiled Output</p>
-                  <h2 class="typography-h2">Script Block</h2>
-                </div>
-                <button class="copy-button" id="copyScriptButton" type="button">
-                  Copy script
-                </button>
-              </div>
-              <pre><code id="scriptBlock"></code></pre>
-            </section>
-
             <section class="panel output-panel">
               <div class="output-head">
                 <div>
