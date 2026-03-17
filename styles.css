@@ -144,6 +144,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  flex: 1;
 }
 
 .sidebar-link {
@@ -172,6 +173,12 @@ body {
 
 .sidebar-link i {
   font-size: 18px;
+}
+
+.sidebar-link-footer {
+  margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
 }
 
 .canvas {
@@ -324,6 +331,127 @@ pre {
   gap: 14px;
   margin-top: 18px;
   align-items: center;
+}
+
+.tips-toggle {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 16px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tips-toggle-copy {
+  min-width: 0;
+}
+
+.tips-toggle-icon {
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--color-text-muted);
+  transition: transform 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.tips-toggle:hover .tips-toggle-icon {
+  color: var(--color-text);
+  border-color: var(--border-strong);
+}
+
+.tips-panel[data-expanded="true"] .tips-toggle-icon {
+  transform: rotate(180deg);
+}
+
+.tips-body {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
+
+.tips-body[hidden] {
+  display: none;
+}
+
+.tips-rule,
+.tips-subhead {
+  margin: 0;
+}
+
+.tips-rule {
+  font-size: 0.82rem;
+  line-height: 1.65;
+}
+
+.tips-rule strong {
+  color: var(--color-text);
+}
+
+.tips-subhead {
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.tips-list {
+  margin: 0;
+  padding-left: 1.2rem;
+  display: grid;
+  gap: 10px;
+  font-size: 0.78rem;
+  line-height: 1.62;
+}
+
+.tips-list li::marker {
+  color: var(--accent);
+}
+
+.guide-list {
+  margin: 18px 0 0;
+  padding-left: 1.2rem;
+  display: grid;
+  gap: 12px;
+  font-size: 0.8rem;
+  line-height: 1.65;
+}
+
+.guide-list li::marker {
+  color: var(--accent);
+}
+
+.guide-list strong {
+  color: var(--color-text);
+}
+
+.guide-note {
+  margin: 14px 0 0;
+  font-size: 0.8rem;
+  line-height: 1.65;
+}
+
+.guide-substep {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--color-text);
+}
+
+.guide-code-stack {
+  display: grid;
+  gap: 16px;
+  margin-top: 18px;
 }
 
 /* --- Field grid --- */

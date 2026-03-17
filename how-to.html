@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Captian Cruncher</title>
+    <link rel="icon" type="image/svg+xml" href="./favicon/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="96x96" href="./favicon/favicon-96x96.png" />
+    <link rel="icon" href="./favicon/favicon.ico" sizes="any" />
+    <link rel="apple-touch-icon" href="./favicon/apple-touch-icon.png" />
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-layout">
+      <nav class="sidebar">
+        <div class="sidebar-masthead">
+          <img class="sidebar-mascot" src="./favicon/cruncher.png" alt="Captain Cruncher mascot" />
+          <div class="sidebar-brand">Captain Cruncher</div>
+        </div>
+        <div class="sidebar-nav">
+          <a class="sidebar-link" href="./index.html">
+            <i class="ph ph-file-png"></i> PNG Builder
+          </a>
+          <a class="sidebar-link" href="./jpg.html">
+            <i class="ph ph-file-jpg"></i> JPEG Builder
+          </a>
+          <a class="sidebar-link" href="./gif.html">
+            <i class="ph ph-film-strip"></i> GIF Builder
+          </a>
+          <a class="sidebar-link sidebar-link-footer active" href="./how-to.html">
+            <i class="ph ph-book-open"></i> How To
+          </a>
+        </div>
+      </nav>
+
+      <div class="canvas">
+        <main class="canvas-grid">
+          <section class="control-column">
+            <header class="hero panel">
+              <p class="eyebrow">macOS Guide</p>
+              <h1 class="typography-h1 hero-title">How To</h1>
+              <p class="hero-copy typography-body-muted">
+                Install the local dependencies, grab the right pathname, switch
+                into the folder you want, and run the one-line command generated
+                by Captain Cruncher.
+              </p>
+              <div class="hero-pipeline">
+                <p class="pipeline-order">Homebrew → Pathname → Terminal → Command</p>
+                <p class="section-note typography-body-muted">
+                  These instructions are for macOS only. Nothing uploads anywhere.
+                  The builders only generate local shell commands.
+                </p>
+              </div>
+              <p class="install-hint typography-caption">
+                Mac only. You need Terminal and Homebrew for the install commands below.
+              </p>
+            </header>
+
+            <section class="panel">
+              <div class="section-head">
+                <div>
+                  <p class="section-kicker">Quick Start</p>
+                  <h2 class="typography-h2">Typical macOS Flow</h2>
+                </div>
+              </div>
+              <pre><code>brew install pngquant oxipng zopfli jpegoptim jpeg-turbo ffmpeg gifski
+cd /Users/you/path/to/folder
+# paste the builder's one-line command here</code></pre>
+            </section>
+
+            <section class="panel">
+              <div class="section-head">
+                <div>
+                  <p class="section-kicker">Step 1</p>
+                  <h2 class="typography-h2">Install Homebrew and Dependencies</h2>
+                </div>
+              </div>
+              <p class="section-note typography-body-muted">
+                Set up Homebrew first, then install the compression tools used by
+                the builders.
+              </p>
+              <div class="guide-code-stack">
+                <p class="guide-substep typography-label">a. Install Homebrew</p>
+                <p class="guide-note typography-body-muted">
+                  If Homebrew is not installed yet, run this once in Terminal.
+                </p>
+                <pre><code>/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"</code></pre>
+
+                <p class="guide-substep typography-label">b. Install Dependencies</p>
+                <p class="guide-note typography-body-muted">
+                  After Homebrew is ready, install the compression tools Captain
+                  Cruncher uses on macOS.
+                </p>
+                <pre><code>brew install pngquant oxipng zopfli
+brew install jpegoptim jpeg-turbo
+brew install ffmpeg gifski</code></pre>
+              </div>
+              <p class="guide-note typography-body-muted">
+                You can also install everything in one pass:
+                <code>brew install pngquant oxipng zopfli jpegoptim jpeg-turbo ffmpeg gifski</code>
+              </p>
+            </section>
+
+            <section class="panel">
+              <div class="section-head">
+                <div>
+                  <p class="section-kicker">Step 2</p>
+                  <h2 class="typography-h2">Get the Pathname</h2>
+                </div>
+              </div>
+              <ol class="guide-list typography-body-muted">
+                <li>Find the source file in Finder.</li>
+                <li>Hold <code>Option</code>, right-click the file, then choose <strong>Copy "filename" as Pathname</strong>.</li>
+                <li>Paste that full path into the builder input field.</li>
+                <li>If the copied path includes quotes, that is fine. Captain Cruncher strips matching outer quotes automatically.</li>
+              </ol>
+              <p class="guide-note typography-body-muted">
+                Fast fallback: drag a file or folder directly into Terminal to paste
+                its full path.
+              </p>
+            </section>
+
+            <section class="panel">
+              <div class="section-head">
+                <div>
+                  <p class="section-kicker">Step 3</p>
+                  <h2 class="typography-h2">Switch to the Folder</h2>
+                </div>
+              </div>
+              <p class="section-note typography-body-muted">
+                Open Terminal and change into the folder that contains the source
+                asset before running the generated command.
+              </p>
+              <div class="guide-code-stack">
+                <pre><code>cd /Users/you/path/to/folder</code></pre>
+              </div>
+            </section>
+
+            <section class="panel">
+              <div class="section-head">
+                <div>
+                  <p class="section-kicker">Step 4</p>
+                  <h2 class="typography-h2">Run the Terminal Command</h2>
+                </div>
+              </div>
+              <ol class="guide-list typography-body-muted">
+                <li>Open the PNG, JPEG, or GIF builder.</li>
+                <li>Paste the file pathname into the input field.</li>
+                <li>Tune the settings you want.</li>
+                <li>Copy the <strong>One-Line Command</strong>.</li>
+                <li>Paste it into Terminal and press <code>Return</code>.</li>
+                <li>The new output file is written next to the original with the suffix shown in the builder.</li>
+              </ol>
+            </section>
+
+            <section class="panel">
+              <div class="section-head">
+                <div>
+                  <p class="section-kicker">Troubleshooting</p>
+                  <h2 class="typography-h2">When Commands Fail</h2>
+                </div>
+              </div>
+              <ol class="guide-list typography-body-muted">
+                <li>If Terminal says <code>command not found</code>, install the missing Homebrew package.</li>
+                <li>If the path has spaces, keep it quoted when using plain Terminal commands.</li>
+                <li>If you want to inspect the output folder after a run, use <code>open .</code>.</li>
+              </ol>
+            </section>
+          </section>
+        </main>
+      </div>
+    </div>
+  </body>
+</html>
