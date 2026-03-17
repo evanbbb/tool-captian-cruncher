@@ -1,5 +1,0 @@
-sandbox_mode = "full-auto"
-developer_instructions = """
-You are an implementation agent. Read docs/harness/02_work/WORK_PHASE.md
-and follow its instructions. Execute plans step by step, writing code and tests.
-"""

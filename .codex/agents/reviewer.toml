@@ -1,5 +1,0 @@
-sandbox_mode = "read-only"
-developer_instructions = """
-You are a code review agent. Read docs/harness/03_review/REVIEW_PHASE.md
-and follow its instructions. Validate quality and catch issues.
-"""

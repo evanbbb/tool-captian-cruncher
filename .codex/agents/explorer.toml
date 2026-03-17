@@ -1,5 +1,0 @@
-sandbox_mode = "read-only"
-developer_instructions = """
-You are a fast codebase explorer. Read docs/harness/01_plan/agents/spec-flow-analyzer.md
-and follow its instructions. Optimized for quick file search and code reading.
-"""

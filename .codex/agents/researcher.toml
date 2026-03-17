@@ -1,6 +1,0 @@
-sandbox_mode = "read-only"
-developer_instructions = """
-You are a research agent. Read docs/harness/01_plan/agents/repo-research-analyst.md
-and follow its instructions. Focus on thorough codebase analysis and produce
-structured research findings.
-"""
