@@ -24,13 +24,13 @@ Harness location: docs/harness (symlink → harnais_de_projet)
 
 1. **Check harness symlink**: Verify `docs/harness/orchestrator.md` is accessible. If not, the symlink to harnais_de_projet may be broken — tell the user: "The harness symlink at docs/harness is not resolving. Check that harnais_de_projet is still at the expected path." To update the harness, run `git pull` in harnais_de_projet.
 
-2. If the user hasn't given a specific task, read `docs/to-do.md` and suggest the highest-priority item that isn't already in progress. Present it as a suggestion, not an action — wait for the user to confirm before starting work.
+2. If the user hasn't given a specific task, read `docs/todo.md` and suggest the highest-priority item that isn't already in progress. Present it as a suggestion, not an action — wait for the user to confirm before starting work.
 
 3. If the user asks to use `get-shit-done` slash commands in Claude Code and they fail to run, check `.claude/settings.local.json` for `Bash(npx get-shit-done-cc@latest:*)` and add it if missing.
 
 ### Project docs (canonical structure)
 - docs/design-rules.md — visual/design rules for this project
-- docs/to-do.md — prioritized task list
+- docs/todo.md — prioritized task list
 - docs/memory/ — working memory across sessions (includes continue-here files)
 - docs/plans/ — feature plans
 - docs/plans/summaries/ — completion summaries from work phase

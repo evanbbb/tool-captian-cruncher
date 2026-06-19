@@ -1,6 +1,8 @@
 # Captain Cruncher
 
-A static browser app for local image workflows. The PNG, JPEG, and GIF pages generate terminal commands for compression pipelines, the Contrast page samples uploaded images locally for accessibility scoring, and the How To page explains the macOS setup flow.
+Captain Cruncher is a static browser app for local image workflows. It builds
+ready-to-run compression commands for PNG, JPEG, and GIF files and includes an
+in-browser image contrast checker. There is no backend, account, or build step.
 
 ## Pages
 
@@ -10,17 +12,19 @@ A static browser app for local image workflows. The PNG, JPEG, and GIF pages gen
 - **Contrast** — local foreground/background sampling with WCAG and APCA scoring
 - **How To** — macOS install and terminal workflow guide
 
-## Prerequisites
+## Quick Start
 
-Install the CLI tools separately:
+Clone or download the repository, then open `index.html` in a modern browser.
+No local server is required.
 
-```sh
+The generated commands depend on third-party command-line tools. On macOS,
+install all supported tools with Homebrew:
+
+```bash
 brew install pngquant oxipng zopfli jpegoptim jpeg-turbo ffmpeg gifski
 ```
 
 ## Usage
-
-Open `index.html`, `jpg.html`, `gif.html`, `contrast.html`, or `how-to.html` in any modern browser. No build step or server required.
 
 For the command-builder pages:
 
@@ -43,6 +47,27 @@ For the How To page:
 3. Change into the source folder in Terminal
 4. Paste and run the generated command
 
+## Privacy
+
+- PNG, JPEG, and GIF builders only use the file paths you type to generate shell
+  commands. They do not open or upload the files.
+- The Contrast tool reads the selected image locally with the browser's Canvas
+  API. The image never leaves the browser.
+- The app has no analytics or backend. It loads its font and icon library from
+  third-party CDNs.
+
+## Development
+
+The project is plain HTML, CSS, and JavaScript. Edit the source files and reload
+the relevant page in your browser. If your browser restricts local `file://`
+resources, serve the repository from a local static server instead:
+
+```bash
+python3 -m http.server 8000
+```
+
+Then visit `http://localhost:8000`.
+
 ## Project Structure
 
 ```
@@ -58,4 +83,7 @@ js/gif.js                   — GIF command generation logic
 js/contrast.js              — Contrast image sampling and scoring logic
 assets/icons/favicon.svg    — Shared favicon asset
 assets/images/cruncher.png  — Sidebar mascot image
+docs/                       — Design, workflow, and project notes
 ```
+
+Additional architecture details are documented in [PROJECT.md](PROJECT.md).
